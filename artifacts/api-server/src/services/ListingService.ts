@@ -258,6 +258,10 @@ export async function createListing(
       // enters at a lower rank" rather than being rejected. The minimal quality
       // floors above (validateAttributes required specs + media) still apply.
       lenient: true,
+      // Interactive seller: a genuinely-new car brand is learned into the
+      // catalogue (searchable/pickable for everyone) and the listing ranks
+      // slightly lower. Bulk import does NOT auto-learn.
+      autoLearn: true,
     }
   );
 
@@ -973,7 +977,7 @@ export async function updateListing(
     },
     // Always-publish (see createListing): edits never 400 on an unmatched
     // controlled value — it warns + ranks lower instead of rejecting.
-    { sellerId: user.id, sellerVerified: !!user.isVerified, excludeListingId: id, lenient: true }
+    { sellerId: user.id, sellerVerified: !!user.isVerified, excludeListingId: id, lenient: true, autoLearn: true }
   );
 
   await db

@@ -356,6 +356,34 @@ function buildBrandCandidates(ref: ReferenceData): MatchCandidate<{ id: string; 
     .map((b) => ({ item: b, keys: [b.name, b.slug, ...(BRAND_ALIASES[b.slug] ?? [])] }));
 }
 
+/**
+ * Auto-learn a car brand: insert it into the brands catalogue (idempotent by
+ * slug) and return its id + canonical name. Invalidates the reference cache so
+ * the new brand resolves on subsequent normalizations. Interactive create/update
+ * only (opts.autoLearn) — never bulk import, so CSV typos can't pollute it.
+ */
+async function learnBrand(rawName: string): Promise<{ id: string; name: string }> {
+  const name = rawName.trim().replace(/\s+/g, " ").slice(0, 80);
+  const slug = slugify(name);
+  const [inserted] = await db
+    .insert(brands)
+    .values({ name, slug, category: "car" })
+    .onConflictDoNothing()
+    .returning({ id: brands.id });
+  invalidateReferenceCache();
+  if (inserted) return { id: inserted.id, name };
+  // Slug already existed (concurrent/repeat insert) — reuse the existing row.
+  const [existing] = await db
+    .select({ id: brands.id, name: brands.name })
+    .from(brands)
+    .where(eq(brands.slug, slug))
+    .limit(1);
+  if (existing) return { id: existing.id, name: existing.name };
+  throw Object.assign(new Error(`Failed to register brand "${name}".`), {
+    code: "INTERNAL_ERROR",
+  });
+}
+
 function buildModelCandidates(ref: ReferenceData, brandId?: string | null): MatchCandidate<{ id: string; name: string; slug: string }>[] {
   return ref.models
     .filter((m) => (brandId ? m.brandId === brandId : true))
@@ -411,6 +439,9 @@ export interface TrustInputs {
   attributeCompleteness: number; // 0..1
   taxonomyCompleteness: number; // 0..1
   isDuplicate: boolean;
+  /** True when a controlled value (car brand) was auto-learned rather than
+   *  matched to the curated catalogue — demotes rank below curated listings. */
+  autoLearned?: boolean;
 }
 
 export function computeTrustScore(p: TrustInputs): number {
@@ -422,6 +453,7 @@ export function computeTrustScore(p: TrustInputs): number {
   else if (p.imageCount >= 1) score += 2;
   if (p.hasVideo) score += 5;
   if (p.isDuplicate) score -= 30;
+  if (p.autoLearned) score -= 15; // auto-learned taxonomy ranks below curated matches
   return Math.max(0, Math.min(100, score));
 }
 
@@ -615,10 +647,17 @@ export async function normalizeListing(
     requireMedia?: boolean;
     /** When true (e.g. bulk import), unmatched controlled values warn instead of rejecting. Default false. */
     lenient?: boolean;
+    /** When true (interactive create/update), a genuinely-new controlled value
+     *  (currently: car brand) is AUTO-LEARNED into the catalogue instead of left
+     *  unresolved — so it becomes searchable/pickable for everyone. Bulk import
+     *  leaves this off so CSV typos never pollute the catalogue. Default false. */
+    autoLearn?: boolean;
   }
 ): Promise<NormalizationResult> {
   const ref = await getReference();
   const warnings: string[] = [];
+  // Set when a controlled value (car brand) is auto-learned — demotes trust/rank.
+  let autoLearned = false;
   const requireMedia = opts.requireMedia !== false;
 
   // In lenient mode an unmatched controlled value is recorded as a warning and
@@ -692,11 +731,21 @@ export async function normalizeListing(
     const brandRaw = pickString(specs, ["brand", "make", "manufacturer"]);
     if (brandRaw) {
       const m = bestMatch(brandRaw, buildBrandCandidates(ref));
-      if (!m) {
-        failOrWarn(`Unrecognized car brand: "${brandRaw}". Please choose a supported brand.`);
-      } else {
+      if (m) {
         taxonomy.brandId = m.item.id;
         specs.brand = m.item.name;
+      } else if (opts.autoLearn) {
+        // Genuinely-new brand (no fuzzy match): learn it into the catalogue so it
+        // becomes searchable/pickable for everyone, and resolve this listing to
+        // it. Demoted in rank via the autoLearned trust penalty. Fuzzy matching
+        // above already absorbs typos, so only real new brands reach here.
+        const learned = await learnBrand(brandRaw);
+        taxonomy.brandId = learned.id;
+        specs.brand = learned.name;
+        autoLearned = true;
+        warnings.push(`New car brand auto-added to the catalogue: "${learned.name}".`);
+      } else {
+        failOrWarn(`Unrecognized car brand: "${brandRaw}". Please choose a supported brand.`);
       }
     } else {
       const m = bestMatch(title, buildBrandCandidates(ref), 0.9);
@@ -827,6 +876,7 @@ export async function normalizeListing(
     attributeCompleteness: attributeCompleteness(category, specs),
     taxonomyCompleteness: Math.min(1, taxonomyResolved / taxonomyExpected),
     isDuplicate: dupe.isDuplicate,
+    autoLearned,
   });
 
   // Spam → hide (flagged) and zero-out trust. Price outlier → heavy demotion.
