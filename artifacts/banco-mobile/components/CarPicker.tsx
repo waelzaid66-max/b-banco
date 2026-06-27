@@ -17,11 +17,9 @@ import {
   CAR_BRANDS,
   CAR_COUNTRIES,
   CarBrand,
-  CREATE_SAFE_BRANDS,
   brandLabel,
   browseModels,
   countryLabel,
-  createModels,
 } from "@/constants/cars";
 
 interface CarPickerProps {
@@ -55,7 +53,10 @@ export function CarPicker({
   const rowDir = isRTL ? "row-reverse" : "row";
   const textAlign = isRTL ? "right" : "left";
 
-  const brands = mode === "create" ? CREATE_SAFE_BRANDS : CAR_BRANDS;
+  // Both modes now offer the FULL brand catalogue. The old "create-safe only"
+  // gate existed to avoid strict-mode 400s; that gate is retired — unmatched
+  // brands are auto-learned server-side, so any brand here can be published.
+  const brands = CAR_BRANDS;
 
   const popular = useMemo(
     () => brands.filter((b) => b.popular),
@@ -80,11 +81,9 @@ export function CarPicker({
     );
   }, [query, brands]);
 
-  const models = activeBrand
-    ? mode === "create"
-      ? createModels(activeBrand.value)
-      : browseModels(activeBrand.value)
-    : [];
+  // Both modes use the rich model catalogue; brand aliases + lenient
+  // normalization resolve or accept whatever the seller picks (no create-safe gate).
+  const models = activeBrand ? browseModels(activeBrand.value) : [];
 
   const modelResults = useMemo(() => {
     const q = query.trim().toLowerCase();
@@ -302,6 +301,25 @@ export function CarPicker({
             ) : query ? (
               brandResults.length > 0 ? (
                 brandResults.map(renderBrandRow)
+              ) : mode === "create" ? (
+                // Open publish: a brand not in the catalogue can still be listed —
+                // it's sent as typed and auto-learned server-side. Lets sellers
+                // publish ANY brand, then it becomes pickable/searchable for all.
+                <Row
+                  label={t("carPicker.useTypedBrand", { name: query.trim() })}
+                  muted
+                  onPress={() =>
+                    pick(
+                      {
+                        value: `custom:${query.trim().toLowerCase()}`,
+                        en: query.trim(),
+                        ar: query.trim(),
+                        country: "other",
+                      },
+                      null,
+                    )
+                  }
+                />
               ) : (
                 <AppText style={[styles.empty, { color: colors.mutedForeground }]}>
                   {t("carPicker.noResults")}
