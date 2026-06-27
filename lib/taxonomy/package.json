@@ -5,6 +5,7 @@
   "type": "module",
   "exports": {
     ".": "./src/index.ts",
-    "./locations": "./src/locations.ts"
+    "./locations": "./src/locations.ts",
+    "./cars": "./src/cars.ts"
   }
 }

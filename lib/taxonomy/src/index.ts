@@ -10,3 +10,4 @@
  * locations re-export from this package to keep existing import paths working.
  */
 export * from "./locations";
+export * from "./cars";
