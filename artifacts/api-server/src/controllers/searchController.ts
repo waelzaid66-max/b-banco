@@ -15,6 +15,10 @@ export async function searchHandler(req: Request, res: Response) {
     if (query.min_price) parsed.min_price = query.min_price;
     if (query.max_price) parsed.max_price = query.max_price;
     if (query.location) parsed.location = query.location;
+    // Near-me / radius (engine applies it only when all three are present).
+    if (query.near_lat !== undefined) parsed.near_lat = query.near_lat;
+    if (query.near_lng !== undefined) parsed.near_lng = query.near_lng;
+    if (query.radius_km !== undefined) parsed.radius_km = query.radius_km;
     if (query.has_installment !== undefined) parsed.has_installment = query.has_installment;
     // Per-section engine filters (explicit params override anything inferred by NLP).
     if (query.condition) parsed.condition = query.condition;

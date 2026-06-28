@@ -851,6 +851,10 @@ export const SearchQuerySchema = z.object({
   min_price: z.coerce.number().optional(),
   max_price: z.coerce.number().optional(),
   location: z.string().optional(),
+  // Near-me / radius search — all three together; lat/lng in degrees, radius km.
+  near_lat: z.coerce.number().min(-90).max(90).optional(),
+  near_lng: z.coerce.number().min(-180).max(180).optional(),
+  radius_km: z.coerce.number().min(0.1).max(500).optional(),
   has_installment: z.coerce.boolean().optional(),
   industrial_type: industrialTypeParam,
   ...engineFilterFields,
