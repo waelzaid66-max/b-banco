@@ -434,6 +434,30 @@ export interface ConversationSummary {
   viewer_role: ConversationSummaryViewerRole;
 }
 
+/**
+ * Count of each emoji reaction on the message.
+ */
+export type MessageReactions = {[key: string]: number};
+
+/**
+ * Preview of the message this one replies to.
+ */
+export type MessageReplyTo = {
+  id: string;
+  body: string;
+  sender_id: string;
+} | null;
+
+/**
+ * A listing shared as a card inside the chat.
+ */
+export type MessageListingRef = {
+  id: string;
+  title?: string | null;
+  thumb?: string | null;
+  price?: string | null;
+} | null;
+
 export interface Message {
   id: string;
   conversation_id: string;
@@ -443,6 +467,23 @@ export interface Message {
   created_at: string;
   read_at?: string | null;
   media_url?: string | null;
+  /** Attachment kind — image | video | audio (voice note). */
+  media_kind?: string | null;
+  /** Count of each emoji reaction on the message. */
+  reactions?: MessageReactions;
+  /** Emojis the viewer has reacted with. */
+  my_reactions?: string[];
+  /** Preview of the message this one replies to. */
+  reply_to?: MessageReplyTo;
+  /** A listing shared as a card inside the chat. */
+  listing_ref?: MessageListingRef;
+}
+
+export type ReactionResultReactions = {[key: string]: number};
+
+export interface ReactionResult {
+  reactions: ReactionResultReactions;
+  my_reactions: string[];
 }
 
 export type NotificationType = typeof NotificationType[keyof typeof NotificationType];
@@ -2823,14 +2864,43 @@ export type GetMessages200 = {
   meta: Meta;
 };
 
+/**
+ * Attachment kind for the renderer.
+ */
+export type SendMessageBodyMediaKind = typeof SendMessageBodyMediaKind[keyof typeof SendMessageBodyMediaKind] | null;
+
+
+export const SendMessageBodyMediaKind = {
+  image: 'image',
+  video: 'video',
+  audio: 'audio',
+} as const;
+
 export type SendMessageBody = {
   body: string;
-  /** Optional single image attachment URL (from /v1/uploads/request-url). When set, body may be empty. */
+  /** Optional single attachment URL (from /v1/uploads/request-url). When set, body may be empty. */
   media_url?: string | null;
+  /** Attachment kind for the renderer. */
+  media_kind?: SendMessageBodyMediaKind;
+  /** Reply target — a message in the same conversation. */
+  reply_to_id?: string | null;
+  /** A listing to share as a card (body may be empty). */
+  listing_ref_id?: string | null;
 };
 
 export type SendMessage200 = {
   data: Message;
+  error: ApiError | null;
+  meta: Meta;
+};
+
+export type ReactToMessageBody = {
+  /** Allowlisted emoji to toggle for the viewer. */
+  emoji: string;
+};
+
+export type ReactToMessage200 = {
+  data: ReactionResult;
   error: ApiError | null;
   meta: Meta;
 };

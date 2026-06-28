@@ -176,6 +176,8 @@ import type {
   PromoCampaignUpdate,
   PromoteUpload200,
   PromoteUploadBody,
+  ReactToMessage200,
+  ReactToMessageBody,
   RegisterPushToken200,
   RegisterPushTokenBody,
   RenewPromoCampaign200,
@@ -2352,6 +2354,79 @@ export const useSendMessage = <TError = ErrorType<unknown>,
         TContext
       > => {
       return useMutation(getSendMessageMutationOptions(options));
+    }
+
+export const getReactToMessageUrl = (id: string,
+    messageId: string,) => {
+
+
+
+
+  return `/api/v1/conversations/${id}/messages/${messageId}/react`
+}
+
+/**
+ * @summary Toggle an emoji reaction on a message
+ */
+export const reactToMessage = async (id: string,
+    messageId: string,
+    reactToMessageBody: ReactToMessageBody, options?: RequestInit): Promise<ReactToMessage200> => {
+
+  return customFetch<ReactToMessage200>(getReactToMessageUrl(id,messageId),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(reactToMessageBody)
+  }
+);}
+
+
+
+
+export const getReactToMessageMutationOptions = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof reactToMessage>>, TError,{id: string;messageId: string;data: BodyType<ReactToMessageBody>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof reactToMessage>>, TError,{id: string;messageId: string;data: BodyType<ReactToMessageBody>}, TContext> => {
+
+const mutationKey = ['reactToMessage'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof reactToMessage>>, {id: string;messageId: string;data: BodyType<ReactToMessageBody>}> = (props) => {
+          const {id,messageId,data} = props ?? {};
+
+          return  reactToMessage(id,messageId,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type ReactToMessageMutationResult = NonNullable<Awaited<ReturnType<typeof reactToMessage>>>
+    export type ReactToMessageMutationBody = BodyType<ReactToMessageBody>
+    export type ReactToMessageMutationError = ErrorType<unknown>
+
+    /**
+ * @summary Toggle an emoji reaction on a message
+ */
+export const useReactToMessage = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof reactToMessage>>, TError,{id: string;messageId: string;data: BodyType<ReactToMessageBody>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof reactToMessage>>,
+        TError,
+        {id: string;messageId: string;data: BodyType<ReactToMessageBody>},
+        TContext
+      > => {
+      return useMutation(getReactToMessageMutationOptions(options));
     }
 
 export const getMarkConversationReadUrl = (id: string,) => {

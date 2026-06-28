@@ -557,6 +557,62 @@ components:
         media_url:
           type: string
           nullable: true
+        media_kind:
+          type: string
+          nullable: true
+          description: Attachment kind — image | video | audio (voice note).
+        reactions:
+          type: object
+          additionalProperties:
+            type: integer
+          description: Count of each emoji reaction on the message.
+        my_reactions:
+          type: array
+          items:
+            type: string
+          description: Emojis the viewer has reacted with.
+        reply_to:
+          type: object
+          nullable: true
+          description: Preview of the message this one replies to.
+          required: [id, body, sender_id]
+          properties:
+            id:
+              type: string
+            body:
+              type: string
+            sender_id:
+              type: string
+        listing_ref:
+          type: object
+          nullable: true
+          description: A listing shared as a card inside the chat.
+          required: [id]
+          properties:
+            id:
+              type: string
+            title:
+              type: string
+              nullable: true
+            thumb:
+              type: string
+              nullable: true
+            price:
+              type: string
+              nullable: true
+
+    ReactionResult:
+      type: object
+      required: [reactions, my_reactions]
+      properties:
+        reactions:
+          type: object
+          additionalProperties:
+            type: integer
+        my_reactions:
+          type: array
+          items:
+            type: string
 
     Notification:
       type: object
@@ -4209,8 +4265,21 @@ paths:
                   type: string
                   nullable: true
                   description: >
-                    Optional single image attachment URL (from
-                    /v1/uploads/request-url). When set, body may be empty.
+                    Optional single attachment URL (from /v1/uploads/request-url).
+                    When set, body may be empty.
+                media_kind:
+                  type: string
+                  nullable: true
+                  enum: [image, video, audio]
+                  description: Attachment kind for the renderer.
+                reply_to_id:
+                  type: string
+                  nullable: true
+                  description: Reply target — a message in the same conversation.
+                listing_ref_id:
+                  type: string
+                  nullable: true
+                  description: A listing to share as a card (body may be empty).
       responses:
         "200":
           description: The created message
@@ -4222,6 +4291,52 @@ paths:
                 properties:
                   data:
                     $ref: "#/components/schemas/Message"
+                  error:
+                    $ref: "#/components/schemas/ApiError"
+                    nullable: true
+                  meta:
+                    $ref: "#/components/schemas/Meta"
+
+  /v1/conversations/{id}/messages/{messageId}/react:
+    post:
+      operationId: reactToMessage
+      summary: Toggle an emoji reaction on a message
+      tags: [conversations]
+      security:
+        - ClerkAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: messageId
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [emoji]
+              properties:
+                emoji:
+                  type: string
+                  description: Allowlisted emoji to toggle for the viewer.
+      responses:
+        "200":
+          description: Updated reaction counts
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [data, error, meta]
+                properties:
+                  data:
+                    $ref: "#/components/schemas/ReactionResult"
                   error:
                     $ref: "#/components/schemas/ApiError"
                     nullable: true

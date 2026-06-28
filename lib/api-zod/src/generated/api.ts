@@ -973,7 +973,21 @@ export const GetMessagesResponse = zod.object({
   "is_mine": zod.boolean(),
   "created_at": zod.string(),
   "read_at": zod.string().nullish(),
-  "media_url": zod.string().nullish()
+  "media_url": zod.string().nullish(),
+  "media_kind": zod.string().nullish().describe('Attachment kind — image | video | audio (voice note).'),
+  "reactions": zod.record(zod.string(), zod.number()).optional().describe('Count of each emoji reaction on the message.'),
+  "my_reactions": zod.array(zod.string()).optional().describe('Emojis the viewer has reacted with.'),
+  "reply_to": zod.object({
+  "id": zod.string(),
+  "body": zod.string(),
+  "sender_id": zod.string()
+}).nullish().describe('Preview of the message this one replies to.'),
+  "listing_ref": zod.object({
+  "id": zod.string(),
+  "title": zod.string().nullish(),
+  "thumb": zod.string().nullish(),
+  "price": zod.string().nullish()
+}).nullish().describe('A listing shared as a card inside the chat.')
 })),
   "error": zod.object({
   "code": zod.enum(['INVALID_DATA', 'NOT_FOUND', 'UNAUTHORIZED', 'INTERNAL_ERROR', 'FORBIDDEN', 'RATE_LIMITED']),
@@ -996,7 +1010,10 @@ export const SendMessageParams = zod.object({
 
 export const SendMessageBody = zod.object({
   "body": zod.string(),
-  "media_url": zod.string().nullish().describe('Optional single image attachment URL (from \/v1\/uploads\/request-url). When set, body may be empty.\n')
+  "media_url": zod.string().nullish().describe('Optional single attachment URL (from \/v1\/uploads\/request-url). When set, body may be empty.\n'),
+  "media_kind": zod.enum(['image', 'video', 'audio']).nullish().describe('Attachment kind for the renderer.'),
+  "reply_to_id": zod.string().nullish().describe('Reply target — a message in the same conversation.'),
+  "listing_ref_id": zod.string().nullish().describe('A listing to share as a card (body may be empty).')
 })
 
 export const SendMessageResponse = zod.object({
@@ -1008,7 +1025,50 @@ export const SendMessageResponse = zod.object({
   "is_mine": zod.boolean(),
   "created_at": zod.string(),
   "read_at": zod.string().nullish(),
-  "media_url": zod.string().nullish()
+  "media_url": zod.string().nullish(),
+  "media_kind": zod.string().nullish().describe('Attachment kind — image | video | audio (voice note).'),
+  "reactions": zod.record(zod.string(), zod.number()).optional().describe('Count of each emoji reaction on the message.'),
+  "my_reactions": zod.array(zod.string()).optional().describe('Emojis the viewer has reacted with.'),
+  "reply_to": zod.object({
+  "id": zod.string(),
+  "body": zod.string(),
+  "sender_id": zod.string()
+}).nullish().describe('Preview of the message this one replies to.'),
+  "listing_ref": zod.object({
+  "id": zod.string(),
+  "title": zod.string().nullish(),
+  "thumb": zod.string().nullish(),
+  "price": zod.string().nullish()
+}).nullish().describe('A listing shared as a card inside the chat.')
+}),
+  "error": zod.object({
+  "code": zod.enum(['INVALID_DATA', 'NOT_FOUND', 'UNAUTHORIZED', 'INTERNAL_ERROR', 'FORBIDDEN', 'RATE_LIMITED']),
+  "message": zod.string()
+}).nullable(),
+  "meta": zod.object({
+  "cursor": zod.string().optional(),
+  "has_next": zod.boolean().optional(),
+  "total": zod.number().optional()
+})
+})
+
+
+/**
+ * @summary Toggle an emoji reaction on a message
+ */
+export const ReactToMessageParams = zod.object({
+  "id": zod.coerce.string(),
+  "messageId": zod.coerce.string()
+})
+
+export const ReactToMessageBody = zod.object({
+  "emoji": zod.string().describe('Allowlisted emoji to toggle for the viewer.')
+})
+
+export const ReactToMessageResponse = zod.object({
+  "data": zod.object({
+  "reactions": zod.record(zod.string(), zod.number()),
+  "my_reactions": zod.array(zod.string())
 }),
   "error": zod.object({
   "code": zod.enum(['INVALID_DATA', 'NOT_FOUND', 'UNAUTHORIZED', 'INTERNAL_ERROR', 'FORBIDDEN', 'RATE_LIMITED']),
