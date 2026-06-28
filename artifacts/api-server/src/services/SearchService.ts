@@ -45,6 +45,13 @@ export interface ParsedSearchQuery {
   max_year?: number;
   industry?: string;
   origin_type?: string;
+  // Near-me / radius search. All three are required together; when present,
+  // results are limited to listings whose EFFECTIVE coordinate (the listing's
+  // own override, else its area centroid) lies within radius_km of the point.
+  // Absent → behaviour is unchanged (no geo filter).
+  near_lat?: number;
+  near_lng?: number;
+  radius_km?: number;
   sort?: SearchSort;
 }
 
@@ -325,6 +332,28 @@ export async function searchListings(
   // industry / origin) — shared with the feed, pushed into the DB.
   conditions.push(...buildAttributeConditions(parsed));
 
+  // Near-me / radius filter (ADDITIVE — only when all three geo params are
+  // present, so existing search/feed behaviour is byte-identical without them).
+  // Effective coordinate = listing override, else the joined area centroid
+  // (locations LEFT JOIN below is 1:1 on location_id, so it never fans rows out).
+  // A cheap bounding box prunes first; exact Haversine (km, R=6371) confirms.
+  if (parsed.near_lat != null && parsed.near_lng != null && parsed.radius_km != null && parsed.radius_km > 0) {
+    const effLat = sql`COALESCE(${listings.latitude}, ${locations.latitude})`;
+    const effLng = sql`COALESCE(${listings.longitude}, ${locations.longitude})`;
+    const latDelta = parsed.radius_km / 111; // ~111 km per degree of latitude
+    const cosLat = Math.max(Math.cos((parsed.near_lat * Math.PI) / 180), 0.01);
+    const lngDelta = parsed.radius_km / (111 * cosLat);
+    const distanceKm = sql`6371 * acos(LEAST(1, GREATEST(-1,
+      cos(radians(${parsed.near_lat})) * cos(radians(${effLat}))
+        * cos(radians(${effLng}) - radians(${parsed.near_lng}))
+      + sin(radians(${parsed.near_lat})) * sin(radians(${effLat}))
+    )))`;
+    conditions.push(sql`${effLat} IS NOT NULL AND ${effLng} IS NOT NULL`);
+    conditions.push(sql`${effLat} BETWEEN ${parsed.near_lat - latDelta} AND ${parsed.near_lat + latDelta}`);
+    conditions.push(sql`${effLng} BETWEEN ${parsed.near_lng - lngDelta} AND ${parsed.near_lng + lngDelta}`);
+    conditions.push(sql`${distanceKm} <= ${parsed.radius_km}`);
+  }
+
   // Popularity = lifetime views + clicks (interactions is 1:1 with a listing,
   // so the LEFT JOIN never fans rows out and is safe to keep for every sort).
   const popularity = sql<number>`COALESCE(${interactions.views}, 0) + COALESCE(${interactions.clicks}, 0)`;
@@ -367,6 +396,9 @@ export async function searchListings(
     .leftJoin(users, eq(listings.userId, users.id))
     .leftJoin(listingAttributes, eq(listingAttributes.listingId, listings.id))
     .leftJoin(interactions, eq(interactions.listingId, listings.id))
+    // 1:1 on location_id — provides the area centroid for the near-me filter
+    // above. Harmless when no geo filter is active (LEFT JOIN, never fans out).
+    .leftJoin(locations, eq(listings.locationId, locations.id))
     .where(and(...conditions))
     .orderBy(...orderBy)
     .limit(limit + 1)
