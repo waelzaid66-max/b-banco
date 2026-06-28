@@ -60,6 +60,11 @@ jobs:
           --health-retries=5
     env:
       DATABASE_URL: postgresql://postgres:postgres@localhost:5432/banco_test
+      # Run the suite in UTC. The schema uses `timestamp` (without time zone);
+      # the recency keyset cursor compares timestamps for exact equality, which is
+      # only stable when the DB session and Node process share a zone. CI runners
+      # and production are UTC — pin it so the suite is deterministic everywhere.
+      TZ: UTC
     steps:
       - uses: actions/checkout@v4
       - uses: pnpm/action-setup@v4
