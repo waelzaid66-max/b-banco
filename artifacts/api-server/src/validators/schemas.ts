@@ -902,6 +902,10 @@ export const CreateListingSchema = z.object({
   // is required (see refine). The listing still belongs to its category.
   is_request: z.boolean().optional().default(false),
   location: z.string().min(2).max(100),
+  // Optional precise pin (the seller's "use my location"). When set it overrides
+  // the area centroid for near-me search + map display. Both axes or neither.
+  latitude: z.number().min(-90).max(90).optional(),
+  longitude: z.number().min(-180).max(180).optional(),
   specs: z.record(z.unknown()),
   media: z
     .array(

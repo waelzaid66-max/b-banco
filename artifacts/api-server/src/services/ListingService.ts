@@ -166,6 +166,9 @@ export async function createListing(
     // Buyer "request/wanted" post (looking to buy). Relaxes the price requirement.
     is_request?: boolean;
     location: string;
+    // Optional precise pin (overrides the area centroid for near-me + map).
+    latitude?: number;
+    longitude?: number;
     specs: Record<string, unknown>;
     media: Array<{ type: "image" | "video"; url: string; thumbnail_url?: string; is_thumbnail?: boolean }>;
     payment_options: Array<{
@@ -284,6 +287,12 @@ export async function createListing(
         isRequest: input.is_request ?? false,
         location: normalized.locationCanonical ?? input.location,
         locationId: normalized.locationId,
+        // Optional precise pin from the seller; both-or-neither so a lone axis
+        // never yields a half-coordinate. Absent → near-me uses the area centroid.
+        latitude:
+          input.latitude != null && input.longitude != null ? String(input.latitude) : null,
+        longitude:
+          input.latitude != null && input.longitude != null ? String(input.longitude) : null,
         status: "active",
         trustScore: normalized.trustScore,
         isDuplicate: normalized.isDuplicate,
@@ -321,16 +330,21 @@ export async function createListing(
       shippingMethod: input.logistics?.shipping_method ?? null,
     } as typeof listingAttributes.$inferInsert);
 
-    // Step 3: Insert media
-    const mediaValues = input.media.map((m, idx) => ({
-      listingId: listing.id,
-      type: m.type,
-      url: m.url,
-      thumbnailUrl: m.thumbnail_url ?? null,
-      isThumbnail: m.is_thumbnail ?? idx === 0,
-      sortOrder: idx,
-    }));
-    await tx.insert(listingMedia).values(mediaValues);
+    // Step 3: Insert media. Guard the empty case: a buyer request may carry no
+    // photos (the schema only requires media for SALE listings), and Drizzle
+    // throws on .values([]) — so a photo-less request must skip this insert
+    // rather than crash the whole publish.
+    if (input.media.length > 0) {
+      const mediaValues = input.media.map((m, idx) => ({
+        listingId: listing.id,
+        type: m.type,
+        url: m.url,
+        thumbnailUrl: m.thumbnail_url ?? null,
+        isThumbnail: m.is_thumbnail ?? idx === 0,
+        sortOrder: idx,
+      }));
+      await tx.insert(listingMedia).values(mediaValues);
+    }
 
     // Step 4: Insert payment options
     if (input.payment_options.length > 0) {
