@@ -22,6 +22,12 @@ export interface DraftPhone {
   number: string;
 }
 
+/** A free-form seller-added spec (name/value) — unlimited, market-driven. */
+export interface DraftCustomSpec {
+  name: string;
+  value: string;
+}
+
 export interface ListingDraftV1 {
   v: 1;
   savedAt: number;
@@ -35,6 +41,7 @@ export interface ListingDraftV1 {
   isRequest: boolean;
   whatsappEnabled: boolean;
   specs: Record<string, string>;
+  customSpecs: DraftCustomSpec[];
   carBrandValue: string | null;
   carModel: string | null;
   industrialType: string | null;
@@ -63,7 +70,8 @@ export function listingDraftHasContent(d: ListingDraftInput): boolean {
     d.locationValue ||
     d.carBrandValue ||
     d.industrialType ||
-    Object.keys(d.specs).length > 0
+    Object.keys(d.specs).length > 0 ||
+    d.customSpecs.some((c) => c.name.trim() || c.value.trim())
   );
 }
 
@@ -120,6 +128,19 @@ function parsePlans(x: unknown): DraftPlan[] | null {
   return out;
 }
 
+function parseCustomSpecs(x: unknown): DraftCustomSpec[] | null {
+  if (x === undefined) return []; // backward-compat: older drafts had none
+  if (!Array.isArray(x)) return null;
+  const out: DraftCustomSpec[] = [];
+  for (const p of x) {
+    if (!p || typeof p !== "object") return null;
+    const o = p as Record<string, unknown>;
+    if (!isStr(o.name) || !isStr(o.value)) return null;
+    out.push({ name: o.name, value: o.value });
+  }
+  return out;
+}
+
 /**
  * Strictly validate a stored blob. Returns null on bad JSON, wrong version,
  * expiry, or ANY field-type mismatch — never a partially-populated object.
@@ -144,6 +165,8 @@ export function parseListingDraft(raw: string | null, now: number = Date.now()):
   if (!isBool(o.isRequest) || !isBool(o.whatsappEnabled)) return null;
   const specs = parseStrRecord(o.specs);
   if (!specs) return null;
+  const customSpecs = parseCustomSpecs(o.customSpecs);
+  if (!customSpecs) return null;
   if (!(o.carBrandValue === null || isStr(o.carBrandValue))) return null;
   if (!(o.carModel === null || isStr(o.carModel))) return null;
   if (!(o.industrialType === null || isStr(o.industrialType))) return null;
@@ -166,6 +189,7 @@ export function parseListingDraft(raw: string | null, now: number = Date.now()):
     isRequest: o.isRequest,
     whatsappEnabled: o.whatsappEnabled,
     specs,
+    customSpecs,
     carBrandValue: o.carBrandValue as string | null,
     carModel: o.carModel as string | null,
     industrialType: o.industrialType as string | null,

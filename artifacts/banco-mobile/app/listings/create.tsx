@@ -175,6 +175,9 @@ export default function CreateListingScreen() {
   const [photos, setPhotos] = useState<ImagePicker.ImagePickerAsset[]>([]);
   const [captions, setCaptions] = useState<Record<string, string>>({});
   const [specs, setSpecs] = useState<Record<string, string>>({});
+  // Free-form seller specs (philosophy: unlimited, save-everything). Stored as
+  // top-level scalar specs at submit so they're displayed + searchable.
+  const [customSpecs, setCustomSpecs] = useState<{ name: string; value: string }[]>([]);
   const [carBrand, setCarBrand] = useState<CarBrand | null>(null);
   const [carModel, setCarModel] = useState<string | null>(null);
   const [carPickerOpen, setCarPickerOpen] = useState(false);
@@ -313,6 +316,7 @@ export default function CreateListingScreen() {
         setIsRequest(d.isRequest);
         setWhatsappEnabled(d.whatsappEnabled);
         setSpecs(d.specs);
+        setCustomSpecs(d.customSpecs);
         setCarBrand(
           d.carBrandValue ? CAR_BRANDS.find((b) => b.value === d.carBrandValue) ?? null : null,
         );
@@ -353,6 +357,7 @@ export default function CreateListingScreen() {
       isRequest,
       whatsappEnabled,
       specs,
+      customSpecs,
       carBrandValue: carBrand?.value ?? null,
       carModel,
       industrialType,
@@ -376,6 +381,7 @@ export default function CreateListingScreen() {
     isRequest,
     whatsappEnabled,
     specs,
+    customSpecs,
     carBrand,
     carModel,
     industrialType,
@@ -1014,6 +1020,15 @@ export default function CreateListingScreen() {
           specsClean.brand = carBrand.dbName ?? carBrand.en;
           if (carModel) specsClean.model = carModel;
         }
+        // Free-form custom specs (philosophy: unlimited, save-everything). Stored
+        // as top-level scalar keys so they display (formatSpecs) + become
+        // searchable. Structured keys win; blanks + collisions are skipped.
+        for (const cs of customSpecs) {
+          const k = cs.name.trim();
+          const v = cs.value.trim();
+          if (!k || !v || k in specsClean) continue;
+          specsClean[k] = v;
+        }
       }
       // No dedicated media-caption column exists in the contract, so persist
       // per-media captions (keyed by servable url) inside the free-form specs the
@@ -1089,6 +1104,7 @@ export default function CreateListingScreen() {
     setCropQueue([]);
     setEditAsset(null);
     setSpecs({});
+    setCustomSpecs([]);
     setCarBrand(null);
     setCarModel(null);
     setIndustrialType(null);
@@ -1414,6 +1430,7 @@ export default function CreateListingScreen() {
                 Haptics.selectionAsync();
                 setCategory(c.value);
                 setSpecs({});
+                setCustomSpecs([]);
                 setCarBrand(null);
                 setCarModel(null);
                 setIndustrialType(null);
@@ -1779,6 +1796,69 @@ export default function CreateListingScreen() {
               {showOptionalSpecs && optionalSpecFields.map(renderSpecField)}
             </>
           )}
+
+          {/* Free-form custom specs — UNLIMITED (philosophy: flexibility +
+              save-everything). Any name/value the seller adds is stored as a
+              real spec, displayed on the listing, and becomes searchable. */}
+          <SectionLabel
+            text={t("create.customSpecs.title")}
+            colors={colors}
+            textAlign={textAlign}
+          />
+          <AppText style={[styles.hint, { color: colors.mutedForeground, textAlign }]}>
+            {t("create.customSpecs.hint")}
+          </AppText>
+          {customSpecs.map((cs, i) => (
+            <View key={`cs-${i}`} style={[styles.customSpecRow, { flexDirection: rowDir }]}>
+              <TextInput
+                value={cs.name}
+                onChangeText={(txt) =>
+                  setCustomSpecs((prev) => prev.map((x, idx) => (idx === i ? { ...x, name: txt } : x)))
+                }
+                placeholder={t("create.customSpecs.namePlaceholder")}
+                placeholderTextColor={colors.mutedForeground}
+                style={[
+                  styles.customSpecName,
+                  { backgroundColor: colors.card, color: colors.foreground, borderColor: colors.border, borderRadius: colors.radius, textAlign },
+                ]}
+                testID={`custom-spec-name-${i}`}
+              />
+              <TextInput
+                value={cs.value}
+                onChangeText={(txt) =>
+                  setCustomSpecs((prev) => prev.map((x, idx) => (idx === i ? { ...x, value: txt } : x)))
+                }
+                placeholder={t("create.customSpecs.valuePlaceholder")}
+                placeholderTextColor={colors.mutedForeground}
+                style={[
+                  styles.customSpecValue,
+                  { backgroundColor: colors.card, color: colors.foreground, borderColor: colors.border, borderRadius: colors.radius, textAlign },
+                ]}
+                testID={`custom-spec-value-${i}`}
+              />
+              <Pressable
+                onPress={() => setCustomSpecs((prev) => prev.filter((_, idx) => idx !== i))}
+                style={styles.customSpecRemove}
+                hitSlop={8}
+                testID={`custom-spec-remove-${i}`}
+              >
+                <Feather name="x" size={18} color={colors.destructive} />
+              </Pressable>
+            </View>
+          ))}
+          <Pressable
+            onPress={() => {
+              Haptics.selectionAsync();
+              setCustomSpecs((prev) => [...prev, { name: "", value: "" }]);
+            }}
+            style={[styles.moreToggle, { borderColor: colors.border, borderRadius: colors.radius, flexDirection: rowDir }]}
+            testID="create-add-custom-spec"
+          >
+            <Feather name="plus" size={16} color={colors.primary} />
+            <AppText style={[styles.moreToggleText, { color: colors.primary }]}>
+              {t("create.customSpecs.add")}
+            </AppText>
+          </Pressable>
         </>
       )}
 
@@ -2913,6 +2993,24 @@ const styles = StyleSheet.create({
     marginBottom: 4,
   },
   moreToggleText: { flex: 1, fontSize: 14, fontFamily: "Inter_600SemiBold" },
+  customSpecRow: { alignItems: "center", gap: 8, marginBottom: 8 },
+  customSpecName: {
+    flex: 1,
+    borderWidth: 1,
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+    fontSize: 14,
+    fontFamily: "Inter_400Regular",
+  },
+  customSpecValue: {
+    flex: 1,
+    borderWidth: 1,
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+    fontSize: 14,
+    fontFamily: "Inter_400Regular",
+  },
+  customSpecRemove: { width: 32, height: 32, alignItems: "center", justifyContent: "center" },
   phoneRemove: {
     width: 44,
     height: 44,
