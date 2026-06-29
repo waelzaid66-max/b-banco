@@ -820,6 +820,7 @@ const en = {
     moveMediaForward: "Move later",
     phoneFormatHint: "Format: e.g. {sample}",
     moreDetails: "More details (optional)",
+    specsHint: "These help your ad rank higher in search and help buyers decide faster.",
     customSpecs: {
       title: "Extra specifications (optional)",
       hint: "Add any spec the form doesn't list — it shows on your ad and helps buyers find it. Sell anything: a factory, a production line, land, raw materials, a licence…",
@@ -2486,6 +2487,7 @@ const ar: typeof en = {
     moveMediaForward: "تأخير",
     phoneFormatHint: "الصيغة: مثال {sample}",
     moreDetails: "تفاصيل إضافية (اختياري)",
+    specsHint: "دي بتساعد إعلانك يظهر أعلى في البحث وتساعد المشترين يقرروا أسرع.",
     customSpecs: {
       title: "مواصفات إضافية (اختياري)",
       hint: "ضيف أي مواصفة مش موجودة في الفورم — هتظهر في إعلانك وتساعد المشترين يلاقوه. بيع أي حاجة: مصنع، خط إنتاج، أرض، خامات، رخصة…",

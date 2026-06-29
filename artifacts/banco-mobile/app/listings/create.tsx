@@ -62,7 +62,7 @@ import { SmartAssetCard } from "@/components/SmartAssetCard";
 import { type CarBrand, brandLabel, CAR_BRANDS } from "@/constants/cars";
 import {
   INDUSTRIAL_TYPES,
-  SPEC_FIELDS_BY_UI,
+  visibleSpecFieldsFor,
   UI_CATEGORIES,
   apiCategoryForUi,
   requiredSpecKeysFor,
@@ -236,9 +236,12 @@ export default function CreateListingScreen() {
   const rowDir: "row" | "row-reverse" = isRTL ? "row-reverse" : "row";
   const textAlign: "right" | "left" = isRTL ? "right" : "left";
 
+  // Only render fields that apply to the chosen sub-type (e.g. land/shop drop
+  // rooms/finishing) — recomputes as property_type changes. The form never asks
+  // a question that doesn't fit what's being sold.
   const specFields = useMemo(
-    () => (category ? SPEC_FIELDS_BY_UI[category] : []),
-    [category],
+    () => (category ? visibleSpecFieldsFor(category, specs) : []),
+    [category, specs],
   );
   // Which keys are required depends on the chosen sub-type — e.g. land/shop have
   // no rooms/finishing, raw materials need no industry — so recompute as the spec
@@ -1758,6 +1761,11 @@ export default function CreateListingScreen() {
                 })}
               </View>
             </View>
+          )}
+          {specFields.length > 0 && (
+            <AppText style={[styles.hint, { color: colors.mutedForeground, textAlign }]}>
+              {t("create.specsHint")}
+            </AppText>
           )}
           {requiredSpecFields.map(renderSpecField)}
           {optionalSpecFields.length > 0 && (

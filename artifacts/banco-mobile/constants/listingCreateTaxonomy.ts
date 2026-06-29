@@ -119,6 +119,7 @@ export const INDUSTRY_TYPES: { value: string; en: string; ar: string }[] = [
   { value: "pharmaceutical", en: "Pharmaceutical", ar: "أدوية" },
   { value: "chemical", en: "Chemical", ar: "كيماويات" },
   { value: "engineering", en: "Engineering", ar: "هندسي" },
+  { value: "other", en: "Other", ar: "أخرى" },
 ];
 
 export const MATERIAL_TYPES: { value: string; en: string; ar: string }[] = [
@@ -270,4 +271,28 @@ export function requiredSpecKeysFor(
     return base.filter((k) => k !== "industry");
   }
   return base;
+}
+
+/** Fields hidden entirely for no-rooms real-estate types (raw land / bare
+ * commercial units) — they would never apply (a plot has no rooms/bathrooms/
+ * finishing), so we don't even render them. */
+const RE_HIDDEN_FOR_NO_ROOMS = new Set(["rooms", "bathrooms", "finishing"]);
+
+/**
+ * The structured spec fields to RENDER for a category given the CURRENT values.
+ * Drops fields that don't apply to the chosen sub-type (e.g. rooms/finishing for
+ * land), so the form only ever shows real, relevant questions.
+ */
+export function visibleSpecFieldsFor(
+  ui: UiListingCategory,
+  specs: Record<string, string | undefined>
+): SpecField[] {
+  const fields = SPEC_FIELDS_BY_UI[ui];
+  if (ui === "real_estate") {
+    const pt = specs.property_type ?? "";
+    if ((REAL_ESTATE_NO_ROOMS_TYPES as readonly string[]).includes(pt)) {
+      return fields.filter((f) => !RE_HIDDEN_FOR_NO_ROOMS.has(f.key));
+    }
+  }
+  return fields;
 }
