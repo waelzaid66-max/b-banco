@@ -25,6 +25,7 @@ import { SafeAreaProvider } from "react-native-safe-area-context";
 
 import { CinematicIntro } from "@/components/CinematicIntro";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
+import { logClientCrash, installGlobalCrashHandler } from "@/lib/crashLog";
 import { BiometricProvider } from "@/context/BiometricContext";
 import { LanguageProvider } from "@/context/LanguageContext";
 import { SessionProvider } from "@/context/SessionContext";
@@ -36,6 +37,11 @@ import { PushNotificationsBridge } from "@/hooks/usePushNotifications";
 if (process.env.EXPO_PUBLIC_DOMAIN) {
   setBaseUrl(`https://${process.env.EXPO_PUBLIC_DOMAIN}`);
 }
+
+// Capture uncaught global JS errors (in addition to React render crashes caught
+// by the ErrorBoundary below) so no crash goes unseen. Preserves the default
+// red-box/crash behavior — adds logging only.
+installGlobalCrashHandler();
 
 const publishableKey = process.env.EXPO_PUBLIC_CLERK_PUBLISHABLE_KEY ?? "";
 const proxyUrl = process.env.EXPO_PUBLIC_CLERK_PROXY_URL || undefined;
@@ -218,7 +224,11 @@ export default function RootLayout() {
     >
       <ClerkLoaded>
         <SafeAreaProvider>
-          <ErrorBoundary>
+          <ErrorBoundary
+            onError={(error, componentStack) =>
+              logClientCrash(error, { kind: "reactRender", componentStack })
+            }
+          >
             <QueryClientProvider client={queryClient}>
               <AuthTokenBridge />
               <ThemeProvider>
