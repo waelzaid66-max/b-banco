@@ -168,21 +168,23 @@ export const SPEC_FIELDS_BY_UI: Record<UiListingCategory, SpecField[]> = {
     { key: "color", labelKey: "create.fields.color", placeholderKey: "create.fields.colorPh", type: "text" },
   ],
   real_estate: [
+    // Primary EG/Gulf split — chosen first. sale = تمليك (ownership), rent = إيجار.
+    {
+      key: "offer_type",
+      labelKey: "create.fields.offerType",
+      type: "select",
+      required: true,
+      options: [
+        { value: "sale", labelKey: "create.opts.sale" },
+        { value: "rent", labelKey: "create.opts.rent" },
+      ],
+    },
     { key: "property_type", labelKey: "create.fields.propertyType", type: "select", required: true, options: enumOptions(PROPERTY_TYPES) },
     { key: "area", labelKey: "create.fields.area", placeholderKey: "create.fields.areaPh", type: "number", required: true },
     { key: "rooms", labelKey: "create.fields.rooms", placeholderKey: "create.fields.roomsPh", type: "number", required: true },
     { key: "bathrooms", labelKey: "create.fields.bathrooms", placeholderKey: "create.fields.bathroomsPh", type: "number" },
     { key: "finishing", labelKey: "create.fields.finishing", type: "select", required: true, options: enumOptions(FINISHING_TYPES) },
     { key: "ownership", labelKey: "create.fields.ownership", type: "select", options: enumOptions(OWNERSHIP_TYPES) },
-    {
-      key: "condition",
-      labelKey: "create.fields.condition",
-      type: "select",
-      options: [
-        { value: "new", labelKey: "create.opts.newCond" },
-        { value: "used", labelKey: "create.opts.used" },
-      ],
-    },
   ],
   industrial: [
     { key: "industry", labelKey: "create.fields.industry", type: "select", required: true, options: enumOptions(INDUSTRY_TYPES) },
@@ -217,7 +219,7 @@ export const SPEC_FIELDS_BY_UI: Record<UiListingCategory, SpecField[]> = {
  */
 export const REQUIRED_SPEC_KEYS: Record<UiListingCategory, readonly string[]> = {
   car: ["mileage", "year", "condition", "fuel_type"],
-  real_estate: ["area", "rooms", "property_type", "finishing"],
+  real_estate: ["offer_type", "area", "rooms", "property_type", "finishing"],
   industrial: ["capacity", "industry", "industrial_type"],
   raw_materials: ["capacity", "industry", "material", "industrial_type"],
 };

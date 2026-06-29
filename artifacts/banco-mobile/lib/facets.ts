@@ -102,6 +102,7 @@ function engineFacetCount(params: EngineDef["params"], f: FacetCounts): number {
   if (params.transmission) return f.transmission[params.transmission] ?? 0;
   if (params.industry) return f.industry[params.industry] ?? 0;
   if (params.origin_type) return f.origin_type[params.origin_type] ?? 0;
+  if (params.offer_type) return f.offer_type[params.offer_type] ?? 0;
   return 1;
 }
 

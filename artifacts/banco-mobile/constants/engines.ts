@@ -25,6 +25,8 @@ import type { Category } from "@/components/CategoryTabs";
 export interface EngineParams {
   condition?: "new" | "used";
   payment_plan?: "installment" | "bank" | "direct" | "islamic";
+  // Real-estate offer type — sale (تمليك / ownership) vs rent (إيجار).
+  offer_type?: "sale" | "rent";
   property_type?: string;
   finishing_type?: string;
   compound?: boolean;
@@ -112,11 +114,25 @@ const CAR_ENGINES: EngineDef[] = [
   },
 ];
 
-// Real estate: property types + compound/furnished (specs booleans) + the two
-// financing modes present in the data (seller direct, sharia-compliant).
-// "Ownership", "Rent" and "Exclusive Offers" are omitted (no backing data).
+// Real estate: the primary EG/Gulf split is offer type (تمليك sale / إيجار rent)
+// — surfaced first, right after "all" (sale before rent). These are new taxonomy
+// (specs.offer_type), so they fail CLOSED via requiresFacet: a chip only appears
+// once real rent/sale inventory exists, never yielding an empty results page.
+// Then property types + compound/furnished + the financing modes present in data.
 const REAL_ESTATE_ENGINES: EngineDef[] = [
   ALL_ENGINE,
+  {
+    key: "sale",
+    i18nKey: "home.engines.sale",
+    params: { offer_type: "sale" },
+    requiresFacet: true,
+  },
+  {
+    key: "rent",
+    i18nKey: "home.engines.rent",
+    params: { offer_type: "rent" },
+    requiresFacet: true,
+  },
   {
     key: "villa",
     i18nKey: "home.engines.villa",
