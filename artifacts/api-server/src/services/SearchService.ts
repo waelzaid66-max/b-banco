@@ -442,6 +442,108 @@ export async function searchListings(
   return { items, cursor: nextCursor, has_next: hasNext };
 }
 
+export interface MapBounds {
+  min_lat: number;
+  min_lng: number;
+  max_lat: number;
+  max_lng: number;
+}
+
+export interface MapCluster {
+  /** Cluster centroid (avg of member coordinates). */
+  lat: number;
+  lng: number;
+  /** How many listings the cluster aggregates. */
+  count: number;
+  /** Present ONLY for a single-listing cluster (count === 1) → a tappable pin. */
+  listing_id: string | null;
+}
+
+/**
+ * Server-side map clustering (#4, Addition A5). Aggregates the listings that
+ * match the SAME filters as search — but within a viewport bounding box — into a
+ * zoom-dependent grid, returning one row per occupied cell (centroid + count)
+ * instead of every pin. This is what lets the map scale: the client fetches a
+ * bounded number of clusters per pan/zoom rather than all matching coordinates.
+ *
+ * Reuses the exact visibility + filter conditions as `searchListings` (status,
+ * category, request, price, location, free-text, abuse hiding, per-section
+ * attribute filters) so the map and the list stay consistent. Effective
+ * coordinate = listing override, else the area centroid (locations 1:1 join).
+ * ADDITIVE: a brand-new function; `searchListings` is untouched.
+ */
+export async function mapClusters(
+  parsed: ParsedSearchQuery,
+  bounds: MapBounds,
+  zoom: number
+): Promise<MapCluster[]> {
+  const conditions = [eq(listings.status, "active")];
+
+  if (parsed.category) conditions.push(eq(listings.category, parsed.category));
+  if (parsed.is_request !== undefined)
+    conditions.push(eq(listings.isRequest, parsed.is_request));
+  if (parsed.industrial_type && parsed.industrial_type.length > 0)
+    conditions.push(inArray(listingAttributes.industrialType, parsed.industrial_type));
+  if (parsed.max_price) conditions.push(lte(listings.basePriceCash, String(parsed.max_price)));
+  if (parsed.min_price) conditions.push(gte(listings.basePriceCash, String(parsed.min_price)));
+  if (parsed.location) conditions.push(ilike(listings.location, `%${parsed.location}%`));
+  if (parsed.search_term) {
+    const term = `%${parsed.search_term}%`;
+    conditions.push(
+      or(
+        ilike(listings.title, term),
+        ilike(listings.description, term),
+        sql`(jsonb_typeof(${listingAttributes.specs}) = 'object' AND EXISTS (SELECT 1 FROM jsonb_each_text(${listingAttributes.specs}) AS kv WHERE kv.value ILIKE ${term}))`
+      )!
+    );
+  }
+  conditions.push(...publicVisibilityConditions());
+  conditions.push(...buildAttributeConditions(parsed));
+
+  // Effective coordinate (listing override → area centroid), as float for math.
+  const effLat = sql`COALESCE(${listings.latitude}, ${locations.latitude})::float8`;
+  const effLng = sql`COALESCE(${listings.longitude}, ${locations.longitude})::float8`;
+
+  // Restrict to the viewport (and require a coordinate to exist).
+  conditions.push(sql`${effLat} IS NOT NULL AND ${effLng} IS NOT NULL`);
+  conditions.push(sql`${effLat} BETWEEN ${bounds.min_lat} AND ${bounds.max_lat}`);
+  conditions.push(sql`${effLng} BETWEEN ${bounds.min_lng} AND ${bounds.max_lng}`);
+
+  // Grid cell size in degrees from zoom: coarse cells when zoomed out (heavy
+  // clustering), fine cells when zoomed in (down to individual pins). Clamped so
+  // the exponent stays sane regardless of what the client sends.
+  const z = Math.max(0, Math.min(20, Math.floor(zoom)));
+  const cell = 360 / Math.pow(2, z + 2);
+  const gy = sql`floor(${effLat} / ${cell})`;
+  const gx = sql`floor(${effLng} / ${cell})`;
+
+  const rows = await db
+    .select({
+      cnt: sql<number>`count(*)::int`,
+      clat: sql<number>`avg(${effLat})::float8`,
+      clng: sql<number>`avg(${effLng})::float8`,
+      // min(uuid) has no aggregate in PG — compare as text. Only used when the
+      // cluster holds exactly one listing (→ a tappable pin), so any single id is
+      // correct; for multi-listing cells the value is ignored.
+      sample: sql<string>`min(${listings.id}::text)`,
+    })
+    .from(listings)
+    .leftJoin(users, eq(listings.userId, users.id))
+    .leftJoin(listingAttributes, eq(listingAttributes.listingId, listings.id))
+    .leftJoin(locations, eq(listings.locationId, locations.id))
+    .where(and(...conditions))
+    .groupBy(gy, gx)
+    // Bound the payload — a sane viewport never needs more cells than this.
+    .limit(2000);
+
+  return rows.map((r) => ({
+    lat: Number(r.clat),
+    lng: Number(r.clng),
+    count: Number(r.cnt),
+    listing_id: Number(r.cnt) === 1 ? r.sample : null,
+  }));
+}
+
 export async function getAutocomplete(query: string): Promise<string[]> {
   if (!query || query.length < 2) return [];
 
