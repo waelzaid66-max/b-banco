@@ -643,6 +643,9 @@ const en = {
     accountNumber: "Account No.",
     photoUploadFailedTitle: "Upload failed",
     photoUploadFailedBody: "We couldn't update your photo. Please try again.",
+    photoPermissionTitle: "Photo access needed",
+    photoPermissionBody: "Allow photo access to add or change your photo.",
+    photoPermissionSettings: "Open Settings",
     photoAccessTitle: "Access Your Photos",
     photoAccessMessage:
       "To set a profile picture, BANCO needs permission to open your photo library. We only access the photo you pick — nothing else, and never in the background.",
@@ -2312,6 +2315,9 @@ const ar: typeof en = {
     accountNumber: "رقم الحساب",
     photoUploadFailedTitle: "فشل الرفع",
     photoUploadFailedBody: "تعذّر تحديث صورتك. من فضلك حاول مرة أخرى.",
+    photoPermissionTitle: "محتاجين إذن الصور",
+    photoPermissionBody: "اسمح بالوصول للصور عشان تقدر تضيف أو تغيّر صورتك.",
+    photoPermissionSettings: "افتح الإعدادات",
     photoAccessTitle: "الوصول إلى صورك",
     photoAccessMessage:
       "لتعيين صورة الملف الشخصي، يحتاج BANCO إذنًا لفتح مكتبة صورك. لا نصل إلا للصورة التي تختارها — لا شيء غير ذلك، وأبدًا في الخلفية.",

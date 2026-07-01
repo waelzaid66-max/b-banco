@@ -273,7 +273,22 @@ export default function ProfileScreen() {
     setShowPhotoRationale(false);
     try {
       const perm = await ImagePicker.requestMediaLibraryPermissionsAsync();
-      if (!perm.granted) return;
+      if (!perm.granted) {
+        Alert.alert(
+          t("profile.photoPermissionTitle"),
+          t("profile.photoPermissionBody"),
+          [
+            { text: t("common.cancel"), style: "cancel" },
+            {
+              text: t("profile.photoPermissionSettings"),
+              onPress: () => {
+                void Linking.openSettings();
+              },
+            },
+          ],
+        );
+        return;
+      }
       const result = await ImagePicker.launchImageLibraryAsync({
         mediaTypes: ["images"],
         allowsEditing: true,
@@ -290,7 +305,8 @@ export default function ProfileScreen() {
       await user?.setProfileImage({ file });
       await user?.reload();
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-    } catch {
+    } catch (e) {
+      console.warn("[profile] avatar upload failed", e);
       Alert.alert(
         t("profile.photoUploadFailedTitle"),
         t("profile.photoUploadFailedBody"),
@@ -306,7 +322,22 @@ export default function ProfileScreen() {
     setShowMenu(false);
     try {
       const perm = await ImagePicker.requestMediaLibraryPermissionsAsync();
-      if (!perm.granted) return;
+      if (!perm.granted) {
+        Alert.alert(
+          t("profile.photoPermissionTitle"),
+          t("profile.photoPermissionBody"),
+          [
+            { text: t("common.cancel"), style: "cancel" },
+            {
+              text: t("profile.photoPermissionSettings"),
+              onPress: () => {
+                void Linking.openSettings();
+              },
+            },
+          ],
+        );
+        return;
+      }
       const result = await ImagePicker.launchImageLibraryAsync({
         mediaTypes: ["images"],
         allowsEditing: true,
@@ -329,7 +360,8 @@ export default function ProfileScreen() {
       });
       await user?.reload();
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-    } catch {
+    } catch (e) {
+      console.warn("[profile] cover upload failed", e);
       Alert.alert(
         t("profile.photoUploadFailedTitle"),
         t("profile.photoUploadFailedBody"),
