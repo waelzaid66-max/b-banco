@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import {
   useCreateListing,
   useUpdateListing,
@@ -25,10 +25,24 @@ import { Switch } from "@/components/ui/switch";
 import {
   Select, SelectContent, SelectGroup, SelectItem, SelectLabel, SelectTrigger, SelectValue,
 } from "@/components/ui/select";
-import { Loader2, Plus, Trash2, Image as ImageIcon } from "lucide-react";
+import { Loader2, Plus, Trash2, Image as ImageIcon, Upload, X } from "lucide-react";
 import { ALL_INDUSTRIAL_TYPES, LOCATIONS, flattenAreas } from "@workspace/taxonomy";
+import { uploadImageFile, isAllowedImageType } from "@/lib/upload";
 
 type Category = "car" | "real_estate" | "industrial";
+
+/**
+ * A photo the dealer picked from their device. `preview` is a local
+ * object URL for instant display; `url` is the persistent serving URL once the
+ * upload + server-side verify succeed. Only `status === "done"` items are sent
+ * with the listing.
+ */
+type MediaItem = {
+  id: string;
+  preview: string;
+  url: string | null;
+  status: "uploading" | "done" | "error";
+};
 
 type SpecOption = { value: string; label: string };
 type SpecField = { key: string; label: string; numeric?: boolean; options?: SpecOption[] };
@@ -149,8 +163,23 @@ export function ListingFormSheet({
   const [location, setLocation] = useState("");
   const [specs, setSpecs] = useState<Record<string, string>>({});
   const [originalSpecs, setOriginalSpecs] = useState<Record<string, unknown>>({});
-  const [media, setMedia] = useState<string[]>([""]);
+  const [media, setMedia] = useState<MediaItem[]>([]);
   const [payments, setPayments] = useState<PaymentRow[]>([]);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  // Mirror the latest media so cleanup paths (reset / unmount) can revoke the
+  // local object-URL previews without stale closures — otherwise Blob URLs leak
+  // across repeated open/upload/close cycles.
+  const mediaRef = useRef<MediaItem[]>([]);
+  useEffect(() => {
+    mediaRef.current = media;
+  }, [media]);
+  useEffect(
+    () => () => {
+      mediaRef.current.forEach((m) => URL.revokeObjectURL(m.preview));
+    },
+    [],
+  );
 
   // Reset to a clean state whenever a CREATE sheet is opened.
   useEffect(() => {
@@ -163,7 +192,8 @@ export function ListingFormSheet({
       setLocation("");
       setSpecs({});
       setOriginalSpecs({});
-      setMedia([""]);
+      mediaRef.current.forEach((m) => URL.revokeObjectURL(m.preview));
+      setMedia([]);
       setPayments([]);
     }
   }, [open, isEdit]);
@@ -221,6 +251,42 @@ export function ListingFormSheet({
   };
 
   const isPending = createListing.isPending || updateListing.isPending;
+  const isUploading = media.some((m) => m.status === "uploading");
+
+  const onFilesSelected = async (files: FileList | null) => {
+    if (!files?.length) return;
+    for (const file of Array.from(files)) {
+      if (!isAllowedImageType(file.type)) {
+        toast({ title: `Unsupported image type: ${file.name}`, variant: "destructive" });
+        continue;
+      }
+      const id =
+        typeof crypto !== "undefined" && crypto.randomUUID
+          ? crypto.randomUUID()
+          : `${Date.now()}-${Math.random()}`;
+      const preview = URL.createObjectURL(file);
+      setMedia((m) => [...m, { id, preview, url: null, status: "uploading" }]);
+      try {
+        const url = await uploadImageFile(file);
+        setMedia((m) => m.map((it) => (it.id === id ? { ...it, url, status: "done" } : it)));
+      } catch (err) {
+        setMedia((m) => m.map((it) => (it.id === id ? { ...it, status: "error" } : it)));
+        toast({
+          title: `Failed to upload ${file.name}`,
+          description: err instanceof Error ? err.message : undefined,
+          variant: "destructive",
+        });
+      }
+    }
+  };
+
+  const removeMedia = (id: string) => {
+    setMedia((m) => {
+      const it = m.find((x) => x.id === id);
+      if (it) URL.revokeObjectURL(it.preview);
+      return m.filter((x) => x.id !== id);
+    });
+  };
 
   const handleCreate = () => {
     const err = validateCommon();
@@ -229,9 +295,8 @@ export function ListingFormSheet({
       return;
     }
     const mediaArr = media
-      .map((u) => u.trim())
-      .filter(Boolean)
-      .map((url, i) => ({ type: "image" as const, url, is_thumbnail: i === 0 }));
+      .filter((m) => m.status === "done" && m.url)
+      .map((m, i) => ({ type: "image" as const, url: m.url as string, is_thumbnail: i === 0 }));
 
     const numOrUndef = (s: string) => (s !== "" && isFinite(Number(s)) ? Number(s) : undefined);
     const paymentArr = payments
@@ -432,32 +497,74 @@ export function ListingFormSheet({
                   <Separator className="bg-border" />
                   <div className="flex items-center justify-between mt-4 mb-3">
                     <h3 className="text-sm font-semibold text-foreground flex items-center gap-2">
-                      <ImageIcon className="w-4 h-4" /> Media (image URLs)
+                      <ImageIcon className="w-4 h-4" /> Photos
                     </h3>
-                    <Button type="button" size="sm" variant="outline" className="border-border h-7" onClick={() => setMedia((m) => [...m, ""])} data-testid="form-add-media">
-                      <Plus className="w-3.5 h-3.5 mr-1" /> Add
+                    <Button
+                      type="button"
+                      size="sm"
+                      variant="outline"
+                      className="border-border h-7"
+                      onClick={() => fileInputRef.current?.click()}
+                      data-testid="form-add-media"
+                    >
+                      <Upload className="w-3.5 h-3.5 mr-1" /> Upload
                     </Button>
+                    <input
+                      ref={fileInputRef}
+                      type="file"
+                      accept="image/jpeg,image/png,image/gif,image/webp,image/avif"
+                      multiple
+                      className="hidden"
+                      data-testid="form-media-input"
+                      onChange={(e) => {
+                        onFilesSelected(e.target.files);
+                        e.target.value = "";
+                      }}
+                    />
                   </div>
-                  <div className="space-y-2">
-                    {media.map((url, i) => (
-                      <div key={i} className="flex items-center gap-2">
-                        <Input
-                          value={url}
-                          placeholder="https://…"
-                          onChange={(e) => setMedia((m) => m.map((u, idx) => (idx === i ? e.target.value : u)))}
-                          className="bg-input border-border"
+                  {media.length === 0 ? (
+                    <p className="text-xs text-muted-foreground">
+                      Upload photos from your device. The first photo is the thumbnail. JPG, PNG, WebP, GIF or AVIF.
+                    </p>
+                  ) : (
+                    <div className="grid grid-cols-3 gap-2">
+                      {media.map((m, i) => (
+                        <div
+                          key={m.id}
+                          className="relative aspect-square rounded-md overflow-hidden border border-border bg-input"
                           data-testid={`form-media-${i}`}
-                        />
-                        {i === 0 ? (
-                          <Badge variant="outline" className="border-white/10 text-xs whitespace-nowrap">Thumbnail</Badge>
-                        ) : (
-                          <Button type="button" size="icon" variant="ghost" className="h-8 w-8 flex-shrink-0" onClick={() => setMedia((m) => m.filter((_, idx) => idx !== i))}>
-                            <Trash2 className="w-4 h-4 text-muted-foreground" />
-                          </Button>
-                        )}
-                      </div>
-                    ))}
-                  </div>
+                        >
+                          <img src={m.preview} alt="" className="w-full h-full object-cover" />
+                          {m.status === "uploading" && (
+                            <div className="absolute inset-0 flex items-center justify-center bg-black/50">
+                              <Loader2 className="w-5 h-5 animate-spin text-white" />
+                            </div>
+                          )}
+                          {m.status === "error" && (
+                            <div className="absolute inset-0 flex items-center justify-center bg-destructive/70 text-white text-[10px] px-1 text-center">
+                              Failed
+                            </div>
+                          )}
+                          {i === 0 && m.status === "done" && (
+                            <Badge
+                              variant="outline"
+                              className="absolute bottom-1 left-1 border-white/20 bg-black/60 text-white text-[10px]"
+                            >
+                              Thumbnail
+                            </Badge>
+                          )}
+                          <button
+                            type="button"
+                            onClick={() => removeMedia(m.id)}
+                            className="absolute top-1 right-1 h-6 w-6 flex items-center justify-center rounded-full bg-black/60 text-white hover:bg-black/80"
+                            data-testid={`form-media-remove-${i}`}
+                          >
+                            <X className="w-3.5 h-3.5" />
+                          </button>
+                        </div>
+                      ))}
+                    </div>
+                  )}
                 </div>
 
                 <div>
@@ -529,7 +636,7 @@ export function ListingFormSheet({
           <Button
             className="bg-primary hover:bg-primary/90 text-white"
             onClick={isEdit ? handleUpdate : handleCreate}
-            disabled={isPending || (isEdit && detailLoading)}
+            disabled={isPending || isUploading || (isEdit && detailLoading)}
             data-testid="btn-save-listing"
           >
             {isPending && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
