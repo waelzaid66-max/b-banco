@@ -13,7 +13,7 @@ env = { "CI" = "true" }
 [agent]
 stack = "BEST_EFFORT_FALLBACK"
 expertMode = true
-integrations = ["javascript_openai_ai_integrations:2.0.0"]
+integrations = ["javascript_openai_ai_integrations:2.0.0", "javascript_object_storage:2.0.0"]
 
 [postMerge]
 path = "scripts/post-merge.sh"
@@ -72,7 +72,7 @@ channel = "stable-25_05"
 packages = ["psmisc"]
 
 [objectStorage]
-defaultBucketID = "replit-objstore-41fc812e-9f5e-42cb-93cc-f15445fe1efa"
+defaultBucketID = "replit-objstore-a22229cb-a74e-435f-9d53-bf559db925e0"
 
 [userenv]
 
@@ -83,6 +83,3 @@ CLERK_PUBLISHABLE_KEY = "pk_test_ZXZvbHZpbmctbWFncGllLTQzLmNsZXJrLmFjY291bnRzLmR
 VITE_CLERK_PUBLISHABLE_KEY = "pk_test_ZXZvbHZpbmctbWFncGllLTQzLmNsZXJrLmFjY291bnRzLmRldiQ"
 AI_INTEGRATIONS_OPENAI_API_KEY = "_DUMMY_API_KEY_"
 AI_INTEGRATIONS_OPENAI_BASE_URL = "http://localhost:1106/modelfarm/openai"
-DEFAULT_OBJECT_STORAGE_BUCKET_ID = "replit-objstore-41fc812e-9f5e-42cb-93cc-f15445fe1efa"
-PRIVATE_OBJECT_DIR = "/replit-objstore-41fc812e-9f5e-42cb-93cc-f15445fe1efa/.private"
-PUBLIC_OBJECT_SEARCH_PATHS = "/replit-objstore-41fc812e-9f5e-42cb-93cc-f15445fe1efa/public"
