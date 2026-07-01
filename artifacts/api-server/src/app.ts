@@ -44,10 +44,14 @@ app.use(
   }),
 );
 
-// Pino structured logging (access channel).
+// Pino structured logging (access channel). autoLogging is OFF: pino-http is
+// kept only to attach `req.log`/`req.id` (used by controllers). The single
+// per-request access line is emitted by `requestLogger` below, so leaving
+// autoLogging on would log every request twice.
 app.use(
   pinoHttp({
     logger: accessLogger,
+    autoLogging: false,
     serializers: {
       req(req) {
         return {
@@ -67,6 +71,14 @@ app.use(
 
 // Clerk proxy MUST be before body parsers and compression (streams raw bytes).
 app.use(CLERK_PROXY_PATH, clerkProxyMiddleware());
+
+// Request-ID + duration access logging. Mounted here — after the Clerk proxy but
+// BEFORE compression, CORS, the CSRF-origin guard, body parsers, and Clerk auth —
+// so its res.on("finish") fires for EVERY request, including CSRF 403s,
+// body-size / malformed-JSON rejections, and auth failures that short-circuit
+// before the router. pino-http autoLogging is off, so this is the single access
+// line per request. (OPTIONS preflights are skipped inside requestLogger.)
+app.use(requestLogger);
 
 // Compress responses (gzip/brotli) — keeps the /feed payload small over the wire.
 app.use(compression());
@@ -107,9 +119,6 @@ app.use(
     ),
   })),
 );
-
-// Request-ID + duration logging
-app.use(requestLogger);
 
 // Public, crawler-facing HTML/XML routes (/l/:id, /sitemap.xml, /robots.txt).
 // Mounted BEFORE /api and the 404 handler so these paths resolve to real pages.

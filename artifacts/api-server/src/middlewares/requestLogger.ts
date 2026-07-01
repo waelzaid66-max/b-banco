@@ -13,6 +13,15 @@ declare global {
 }
 
 export function requestLogger(req: Request, res: Response, next: NextFunction) {
+  // CORS preflight (OPTIONS) requests are protocol chatter answered by the cors
+  // middleware, not real API accesses. They carry no business signal and, with a
+  // cross-origin client polling authenticated endpoints, otherwise flood the
+  // access log and metrics. Skip them entirely.
+  if (req.method === "OPTIONS") {
+    next();
+    return;
+  }
+
   req.requestId = randomUUID();
   req.startTime = Date.now();
 

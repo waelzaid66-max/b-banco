@@ -4,7 +4,7 @@
 - [BANCO Search NLP](banco-search-nlp.md) — installment filter must use EXISTS subquery not post-filter; Arabic category/price normalization details
 - [BANCO Taxonomy Normalization](banco-taxonomy.md) — strict taxonomy/enum/location control; pg_trgm dedup; FK ids in all write paths; seed idempotency & lib/db rebuild gotchas
 - [BANCO codegen & API contract](banco-codegen-contract.md) — orval JSON.stringify's binary (Blob) bodies → postprocess restores raw; DB status enum may exceed contract enum
-- [BANCO API logging & esbuild-pino](banco-api-logging-build.md) — every pino transport must be listed in build.mjs esbuildPluginPino or boot crashes; 3 rotated log channels under LOG_DIR
+- [BANCO API logging](banco-api-logging-build.md) — transports must be in build.mjs or boot crashes; pino-http autoLogging:false + requestLogger mounted EARLY = 1 access line (OPTIONS skipped); /tmp/logs are snapshots not live tails
 - [Composite dist staleness](composite-dist-staleness.md) — generated export "missing" in isolated artifact typecheck but present in lib src → stale gitignored composite dist; fix `tsc -b <lib> --force`
 - [Expo typedRoutes regen](expo-typed-routes.md) — new expo-router screens fail typecheck until route types regenerate; the generator only runs when the expo dev server boots
 - [Orval text/csv body quirk](orval-csv-codegen.md) — orval JSON.stringify's binary text/csv request bodies; codegen self-heals via api-spec postprocess.mjs
