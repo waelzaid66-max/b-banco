@@ -6,10 +6,13 @@ import { useUser } from "@clerk/expo";
 import {
   CompanyProfile,
   createConversation,
+  FeedItem,
   useFollowCompany,
   useGetCompany,
+  useGetCompanyListings,
   useUnfollowCompany,
 } from "@workspace/api-client-react";
+import { Image } from "expo-image";
 import * as Haptics from "expo-haptics";
 import { router, useLocalSearchParams } from "expo-router";
 import React, { useState } from "react";
@@ -42,6 +45,10 @@ export default function CompanyProfileScreen() {
   const { isSignedIn, isLoaded } = useUser();
   const { data, isLoading, isError, refetch } = useGetCompany(id ?? "");
   const profile = data?.data as CompanyProfile | undefined;
+  // Public showroom — the company's live listings (existing endpoint). Hidden
+  // entirely when empty; never fabricated.
+  const listingsQ = useGetCompanyListings(id ?? "", { limit: 12 });
+  const showItems: FeedItem[] = (listingsQ.data?.data ?? []) as FeedItem[];
 
   const followM = useFollowCompany();
   const unfollowM = useUnfollowCompany();
@@ -151,6 +158,60 @@ export default function CompanyProfileScreen() {
 
   const trade = profile.company;
   const followerCount = profile.follower_count ?? 0;
+
+  // LinkedIn-style per-type display: a dealer's profile IS its showroom, so
+  // listings lead; a supplier/factory leads with capabilities (trade block)
+  // and the products grid follows. Same blocks, ordered for the company type.
+  const showroomFirst = profile.role === "dealer";
+
+  const showroomSection =
+    showItems.length > 0 ? (
+      <Section
+        title={
+          showroomFirst
+            ? t("business.company.showroom")
+            : t("business.company.products")
+        }
+        colors={colors}
+        textAlign={textAlign}
+      >
+        <View style={[styles.gridWrap, { flexDirection: rowDir }]}>
+          {showItems.map((it) => (
+            <Pressable
+              key={it.id}
+              onPress={() => router.push(`/listing/${it.id}`)}
+              style={[
+                styles.gridCard,
+                {
+                  backgroundColor: colors.card,
+                  borderColor: colors.border,
+                  borderRadius: colors.radius,
+                },
+              ]}
+              testID={`company-listing-${it.id}`}
+            >
+              <Image
+                source={{ uri: it.media_preview }}
+                style={styles.gridImg}
+                contentFit="cover"
+              />
+              <AppText
+                style={[styles.gridPrice, { color: colors.foreground }]}
+                numberOfLines={1}
+              >
+                {it.price_display}
+              </AppText>
+              <AppText
+                style={[styles.gridTitle, { color: colors.mutedForeground, textAlign }]}
+                numberOfLines={1}
+              >
+                {it.title}
+              </AppText>
+            </Pressable>
+          ))}
+        </View>
+      </Section>
+    ) : null;
 
   return (
     <View style={[styles.container, { backgroundColor: colors.background }]}>
@@ -282,6 +343,9 @@ export default function CompanyProfileScreen() {
           />
         </View>
 
+        {/* Dealer: showroom leads. Supplier/factory/company: capabilities lead. */}
+        {showroomFirst ? showroomSection : null}
+
         {trade ? (
           <>
             {trade.about ? (
@@ -360,6 +424,8 @@ export default function CompanyProfileScreen() {
             </AppText>
           </View>
         )}
+
+        {!showroomFirst ? showroomSection : null}
       </ScrollView>
     </View>
   );
@@ -461,6 +527,32 @@ const styles = StyleSheet.create({
   nameRow: { alignItems: "center", gap: 7, marginTop: 4 },
   name: { fontSize: 19, fontFamily: "Inter_700Bold", textAlign: "center" },
   role: { fontSize: 13.5, fontFamily: "Inter_400Regular" },
+  gridWrap: {
+    flexWrap: "wrap",
+    gap: 10,
+  },
+  gridCard: {
+    width: "48%",
+    borderWidth: 1,
+    overflow: "hidden",
+    paddingBottom: 8,
+  },
+  gridImg: {
+    width: "100%",
+    height: 96,
+  },
+  gridPrice: {
+    fontSize: 13.5,
+    fontFamily: "Inter_700Bold",
+    paddingHorizontal: 8,
+    paddingTop: 6,
+  },
+  gridTitle: {
+    fontSize: 12,
+    fontFamily: "Inter_400Regular",
+    paddingHorizontal: 8,
+    paddingTop: 1,
+  },
   headline: {
     fontSize: 13.5,
     fontFamily: "Inter_600SemiBold",
