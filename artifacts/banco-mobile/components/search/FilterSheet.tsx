@@ -10,10 +10,23 @@ import {
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
+import type {
+  SearchListingsFuelType,
+  SearchListingsIndustry,
+  SearchListingsOriginType,
+  SearchListingsTransmission,
+} from "@workspace/api-client-react";
+
 import { AppText } from "@/components/AppText";
-import { Category, CategoryIcon, EngineChips } from "@/components/CategoryTabs";
+import {
+  apiCategoryFor,
+  Category,
+  CategoryIcon,
+  EngineChips,
+} from "@/components/CategoryTabs";
 import { brandLabel, type CarBrand } from "@/constants/cars";
 import type { EngineDef } from "@/constants/engines";
+import { INDUSTRY_TYPES } from "@/constants/listingCreateTaxonomy";
 import { useI18n } from "@/context/LanguageContext";
 import { useColors } from "@/hooks/useColors";
 import type {
@@ -30,6 +43,30 @@ const SORTS: SearchSort[] = [
   "popular",
 ];
 const PAYMENTS: PaymentType[] = ["any", "installment"];
+
+// Section-specific attribute filters. These criteria/back-end params existed but
+// had NO controls in the sheet — cars get fuel + transmission, industrial gets
+// industry + origin, each a single-select chip row (tap again to clear).
+const FUELS: SearchListingsFuelType[] = [
+  "petrol",
+  "diesel",
+  "hybrid",
+  "electric",
+  "natural_gas",
+];
+const FUEL_LABEL_KEY: Record<SearchListingsFuelType, string> = {
+  petrol: "petrol",
+  diesel: "diesel",
+  hybrid: "hybrid",
+  electric: "electric",
+  natural_gas: "naturalGas",
+};
+const TRANSMISSIONS: SearchListingsTransmission[] = [
+  "manual",
+  "automatic",
+  "cvt",
+];
+const ORIGINS: SearchListingsOriginType[] = ["local", "imported"];
 
 interface FilterSheetProps {
   visible: boolean;
@@ -110,6 +147,7 @@ export function FilterSheet({
   };
 
   const isCar = criteria.category === "car";
+  const isIndustrial = apiCategoryFor(criteria.category) === "industrial";
   const showEngines = engines.length > 1;
 
   return (
@@ -358,6 +396,60 @@ export function FilterSheet({
                     testID="year-max"
                   />
                 </View>
+
+                {/* Fuel (cars) */}
+                <SectionLabel text={t("create.fields.fuel")} align={textAlign} colors={colors} />
+                <ToggleChipRow
+                  options={FUELS}
+                  selected={criteria.fuelType}
+                  labelFor={(v) => t(`create.opts.${FUEL_LABEL_KEY[v]}`)}
+                  onToggle={(v) => onUpdate({ fuelType: v })}
+                  rowDir={rowDir}
+                  colors={colors}
+                  testPrefix="filter-fuel"
+                />
+
+                {/* Transmission (cars) */}
+                <SectionLabel text={t("create.fields.transmission")} align={textAlign} colors={colors} />
+                <ToggleChipRow
+                  options={TRANSMISSIONS}
+                  selected={criteria.transmission}
+                  labelFor={(v) => t(`create.opts.${v}`)}
+                  onToggle={(v) => onUpdate({ transmission: v })}
+                  rowDir={rowDir}
+                  colors={colors}
+                  testPrefix="filter-transmission"
+                />
+              </>
+            )}
+
+            {/* Industry + origin (industrial sections) */}
+            {isIndustrial && (
+              <>
+                <SectionLabel text={t("create.fields.industry")} align={textAlign} colors={colors} />
+                <ToggleChipRow
+                  options={INDUSTRY_TYPES.map((i) => i.value as SearchListingsIndustry)}
+                  selected={criteria.industry}
+                  labelFor={(v) => {
+                    const def = INDUSTRY_TYPES.find((i) => i.value === v);
+                    return def ? (isRTL ? def.ar : def.en) : v;
+                  }}
+                  onToggle={(v) => onUpdate({ industry: v })}
+                  rowDir={rowDir}
+                  colors={colors}
+                  testPrefix="filter-industry"
+                />
+
+                <SectionLabel text={t("create.fields.origin")} align={textAlign} colors={colors} />
+                <ToggleChipRow
+                  options={ORIGINS}
+                  selected={criteria.originType}
+                  labelFor={(v) => t(`create.opts.${v}`)}
+                  onToggle={(v) => onUpdate({ originType: v })}
+                  rowDir={rowDir}
+                  colors={colors}
+                  testPrefix="filter-origin"
+                />
               </>
             )}
 
@@ -504,6 +596,61 @@ export function FilterSheet({
         </View>
       </View>
     </Modal>
+  );
+}
+
+/** Single-select chip row: tapping the active chip clears the filter (null). */
+function ToggleChipRow<T extends string>({
+  options,
+  selected,
+  labelFor,
+  onToggle,
+  rowDir,
+  colors,
+  testPrefix,
+}: {
+  options: T[];
+  selected: T | null;
+  labelFor: (v: T) => string;
+  onToggle: (v: T | null) => void;
+  rowDir: "row" | "row-reverse";
+  colors: ReturnType<typeof useColors>;
+  testPrefix: string;
+}) {
+  return (
+    <ScrollView
+      horizontal
+      showsHorizontalScrollIndicator={false}
+      contentContainerStyle={[styles.chipRow, { flexDirection: rowDir }]}
+    >
+      {options.map((v) => {
+        const active = selected === v;
+        return (
+          <Pressable
+            key={v}
+            onPress={() => onToggle(active ? null : v)}
+            style={[
+              styles.chip,
+              { backgroundColor: active ? colors.primary : colors.secondary },
+            ]}
+            testID={`${testPrefix}-${v}`}
+          >
+            <AppText
+              style={[
+                styles.chipText,
+                {
+                  color: active
+                    ? colors.primaryForeground
+                    : colors.mutedForeground,
+                },
+              ]}
+            >
+              {labelFor(v)}
+            </AppText>
+          </Pressable>
+        );
+      })}
+    </ScrollView>
   );
 }
 
