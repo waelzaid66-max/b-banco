@@ -22,7 +22,8 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
-import { hasPermission, STAFF_ROLES, STAFF_ROLE_LABELS, type StaffRole } from "@/lib/permissions";
+import { useLang } from "@/context/LanguageContext";
+import { hasPermission, STAFF_ROLES, type StaffRole } from "@/lib/permissions";
 
 const ROLE_BADGE: Record<string, string> = {
   owner: "bg-[#E8002D]/15 text-[#E8002D] border-[#E8002D]/30",
@@ -36,6 +37,7 @@ export default function UsersPage() {
   const [search, setSearch] = useState("");
   const queryClient = useQueryClient();
   const { toast } = useToast();
+  const { t } = useLang();
 
   const { data: meResp } = useGetMe({ query: { queryKey: getGetMeQueryKey() } });
   const myId = meResp?.data?.id;
@@ -60,9 +62,14 @@ export default function UsersPage() {
       {
         onSuccess: () => {
           refresh();
-          toast({ title: currentlyBanned ? "User unbanned" : "User banned" });
+          toast({
+            title: currentlyBanned
+              ? t("usersPage.toastUnbanned")
+              : t("usersPage.toastBanned"),
+          });
         },
-        onError: () => toast({ title: "Action failed", variant: "destructive" }),
+        onError: () =>
+          toast({ title: t("usersPage.toastActionFailed"), variant: "destructive" }),
       },
     );
   };
@@ -73,12 +80,12 @@ export default function UsersPage() {
       {
         onSuccess: () => {
           refresh();
-          toast({ title: "Role updated", description: STAFF_ROLE_LABELS[role] });
+          toast({ title: t("usersPage.toastRoleUpdated"), description: t(`roles.${role}`) });
         },
         onError: () =>
           toast({
-            title: "Could not change role",
-            description: "The server rejected this change.",
+            title: t("usersPage.toastRoleFailed"),
+            description: t("usersPage.toastRoleFailedDesc"),
             variant: "destructive",
           }),
       },
@@ -91,9 +98,14 @@ export default function UsersPage() {
       {
         onSuccess: () => {
           refresh();
-          toast({ title: currentlyVerified ? "Verification removed" : "User verified" });
+          toast({
+            title: currentlyVerified
+              ? t("usersPage.toastUnverified")
+              : t("usersPage.toastVerified"),
+          });
         },
-        onError: () => toast({ title: "Action failed", variant: "destructive" }),
+        onError: () =>
+          toast({ title: t("usersPage.toastActionFailed"), variant: "destructive" }),
       },
     );
   };
@@ -105,13 +117,13 @@ export default function UsersPage() {
     <div className="p-8 max-w-6xl mx-auto">
       <div className="mb-8 flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight">Users</h1>
-          <p className="text-muted-foreground mt-2">Manage marketplace participants and staff access.</p>
+          <h1 className="text-3xl font-bold tracking-tight">{t("usersPage.title")}</h1>
+          <p className="text-muted-foreground mt-2">{t("usersPage.subtitle")}</p>
         </div>
         <div className="relative w-64">
-          <Search className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
+          <Search className="absolute start-3 top-3 h-4 w-4 text-muted-foreground" />
           <Input
-            placeholder="Search name or email..."
+            placeholder={t("usersPage.searchPh")}
             className="pl-9"
             value={search}
             onChange={(e) => setSearch(e.target.value)}
@@ -123,13 +135,13 @@ export default function UsersPage() {
         <Table>
           <TableHeader>
             <TableRow>
-              <TableHead>User</TableHead>
-              <TableHead>Account No.</TableHead>
-              <TableHead>Role</TableHead>
-              {canManageRoles && <TableHead>Staff Role</TableHead>}
-              <TableHead>Status</TableHead>
-              <TableHead>Listings</TableHead>
-              {showActions && <TableHead className="text-right">Actions</TableHead>}
+              <TableHead>{t("usersPage.colUser")}</TableHead>
+              <TableHead>{t("usersPage.colAccountNo")}</TableHead>
+              <TableHead>{t("usersPage.colRole")}</TableHead>
+              {canManageRoles && <TableHead>{t("usersPage.colStaffRole")}</TableHead>}
+              <TableHead>{t("usersPage.colStatus")}</TableHead>
+              <TableHead>{t("usersPage.colListings")}</TableHead>
+              {showActions && <TableHead className="text-end">{t("usersPage.colActions")}</TableHead>}
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -142,7 +154,7 @@ export default function UsersPage() {
             ) : !users.length ? (
               <TableRow>
                 <TableCell colSpan={colCount} className="h-24 text-center text-muted-foreground">
-                  No users found.
+                  {t("usersPage.empty")}
                 </TableCell>
               </TableRow>
             ) : (
@@ -176,13 +188,13 @@ export default function UsersPage() {
                           <SelectContent>
                             {STAFF_ROLES.map((r) => (
                               <SelectItem key={r} value={r}>
-                                {STAFF_ROLE_LABELS[r]}
+                                {t(`roles.${r}`)}
                               </SelectItem>
                             ))}
                           </SelectContent>
                         </Select>
                         {isSelf && (
-                          <div className="text-[10px] text-muted-foreground mt-1">You</div>
+                          <div className="text-[10px] text-muted-foreground mt-1">{t("usersPage.you")}</div>
                         )}
                       </TableCell>
                     )}
@@ -190,17 +202,17 @@ export default function UsersPage() {
                       <div className="flex flex-wrap items-center gap-1.5">
                         {staffRole !== "user" && (
                           <Badge variant="outline" className={`capitalize ${ROLE_BADGE[staffRole]}`}>
-                            {STAFF_ROLE_LABELS[staffRole]}
+                            {t(`roles.${staffRole}`)}
                           </Badge>
                         )}
                         {user.is_shadow_banned ? (
-                          <Badge variant="destructive">Shadow Banned</Badge>
+                          <Badge variant="destructive">{t("usersPage.shadowBanned")}</Badge>
                         ) : (
-                          <Badge variant="secondary" className="bg-green-500/10 text-green-500 border-green-500/20">Active</Badge>
+                          <Badge variant="secondary" className="bg-green-500/10 text-green-500 border-green-500/20">{t("usersPage.activeStatus")}</Badge>
                         )}
                         {user.is_verified && (
                           <Badge variant="outline" className="bg-blue-500/10 text-blue-400 border-blue-500/20">
-                            <BadgeCheck className="w-3 h-3 mr-1" /> Verified
+                            <BadgeCheck className="w-3 h-3 me-1" /> {t("usersPage.verified")}
                           </Badge>
                         )}
                       </div>
@@ -216,8 +228,8 @@ export default function UsersPage() {
                               onClick={() => handleToggleVerified(user.id!, !!user.is_verified)}
                               disabled={setVerified.isPending}
                             >
-                              <ShieldCheck className="w-4 h-4 mr-2" />
-                              {user.is_verified ? "Unverify" : "Verify"}
+                              <ShieldCheck className="w-4 h-4 me-2" />
+                              {user.is_verified ? t("usersPage.unverify") : t("usersPage.verify")}
                             </Button>
                           )}
                           {canBan && (
@@ -228,9 +240,9 @@ export default function UsersPage() {
                               disabled={toggleBan.isPending}
                             >
                               {user.is_shadow_banned ? (
-                                <><ShieldCheck className="w-4 h-4 mr-2" /> Unban</>
+                                <><ShieldCheck className="w-4 h-4 me-2" /> {t("usersPage.unban")}</>
                               ) : (
-                                <><Ban className="w-4 h-4 mr-2" /> Ban</>
+                                <><Ban className="w-4 h-4 me-2" /> {t("usersPage.ban")}</>
                               )}
                             </Button>
                           )}

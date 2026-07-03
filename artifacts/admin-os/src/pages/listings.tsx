@@ -2,27 +2,29 @@ import { useGetAdminListings } from "@workspace/api-client-react";
 import { Loader2 } from "lucide-react";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
+import { useLang } from "@/context/LanguageContext";
 
 export default function ListingsPage() {
+  const { t } = useLang();
   const { data: listingsResp, isLoading } = useGetAdminListings();
   const listings = listingsResp?.data ?? [];
 
   return (
     <div className="p-8 max-w-6xl mx-auto">
       <div className="mb-8">
-        <h1 className="text-3xl font-bold tracking-tight">All Listings</h1>
-        <p className="text-muted-foreground mt-2">Global marketplace inventory.</p>
+        <h1 className="text-3xl font-bold tracking-tight">{t("listingsPage.title")}</h1>
+        <p className="text-muted-foreground mt-2">{t("listingsPage.subtitle")}</p>
       </div>
 
       <div className="border rounded-md bg-card">
         <Table>
           <TableHeader>
             <TableRow>
-              <TableHead>Listing</TableHead>
-              <TableHead>Category</TableHead>
-              <TableHead>Price</TableHead>
-              <TableHead>Status</TableHead>
-              <TableHead>Seller</TableHead>
+              <TableHead>{t("listingsPage.colListing")}</TableHead>
+              <TableHead>{t("listingsPage.colCategory")}</TableHead>
+              <TableHead>{t("listingsPage.colPrice")}</TableHead>
+              <TableHead>{t("listingsPage.colStatus")}</TableHead>
+              <TableHead>{t("listingsPage.colSeller")}</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -35,7 +37,7 @@ export default function ListingsPage() {
             ) : !listings?.length ? (
               <TableRow>
                 <TableCell colSpan={5} className="h-24 text-center text-muted-foreground">
-                  No listings found.
+                  {t("listingsPage.empty")}
                 </TableCell>
               </TableRow>
             ) : (
