@@ -428,10 +428,11 @@ const en = {
   },
   locationPicker: {
     title: "Location",
-    searchPlaceholder: "Search city or area",
+    searchPlaceholder: "Search city, area or compound",
     any: "Any location",
     allOf: "All {name}",
     noResults: "No matching places",
+    placesSection: "Places & projects",
   },
   carPicker: {
     title: "Brand",
@@ -2115,10 +2116,11 @@ const ar: typeof en = {
   },
   locationPicker: {
     title: "المكان",
-    searchPlaceholder: "دوّر على مدينة أو منطقة",
+    searchPlaceholder: "دوّر على مدينة أو منطقة أو كمبوند",
     any: "كل الأماكن",
     allOf: "كل {name}",
     noResults: "مفيش أماكن مطابقة",
+    placesSection: "أماكن ومشروعات",
   },
   carPicker: {
     title: "الماركة",

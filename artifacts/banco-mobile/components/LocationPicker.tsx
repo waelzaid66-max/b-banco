@@ -1,5 +1,5 @@
 import { Feather } from "@/components/icons";
-import React, { useMemo, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import {
   Modal,
   Pressable,
@@ -19,6 +19,26 @@ import {
   flattenAreas,
   locLabel,
 } from "@/constants/locations";
+import {
+  useGetPlaceSuggestions,
+  getGetPlaceSuggestionsQueryKey,
+} from "@workspace/api-client-react";
+
+// Maps a static-taxonomy country value to the ISO code the reference dataset
+// uses, so suggestions stay scoped to the country the user is browsing. Unmapped
+// countries simply get unscoped suggestions (today only Egypt has data).
+const COUNTRY_ISO: Record<string, string> = {
+  Egypt: "EG",
+  UAE: "AE",
+  "Saudi Arabia": "SA",
+  Qatar: "QA",
+  Kuwait: "KW",
+  Bahrain: "BH",
+  Oman: "OM",
+  Jordan: "JO",
+  Lebanon: "LB",
+  Iraq: "IQ",
+};
 
 interface LocationPickerProps {
   visible: boolean;
@@ -59,6 +79,32 @@ export function LocationPicker({
       );
     });
   }, [query, country]);
+
+  // Debounce so a reference request isn't fired on every keystroke.
+  const [debouncedQuery, setDebouncedQuery] = useState("");
+  useEffect(() => {
+    const id = setTimeout(() => setDebouncedQuery(query.trim()), 250);
+    return () => clearTimeout(id);
+  }, [query]);
+
+  // ADDITIVE: reference-dataset suggestions (cities / districts / compounds /
+  // projects) that the static list doesn't carry — e.g. Mivida, Il Bosco,
+  // Madinaty. Scoped to the active country when it maps to an ISO code.
+  const iso = COUNTRY_ISO[country.value];
+  const refParams = { q: debouncedQuery, ...(iso ? { country: iso } : {}), limit: 8 };
+  const { data: refResp } = useGetPlaceSuggestions(refParams, {
+    query: {
+      queryKey: getGetPlaceSuggestionsQueryKey(refParams),
+      enabled: debouncedQuery.length >= 2,
+      staleTime: 60_000,
+    },
+  });
+  const refSuggestions = useMemo(() => {
+    const items = refResp?.data ?? [];
+    // Drop any place already shown by the static list (by lower-cased EN name).
+    const staticNames = new Set(searchResults.map(({ area }) => area.en.toLowerCase()));
+    return items.filter((p) => !staticNames.has((p.name_en ?? "").toLowerCase()));
+  }, [refResp, searchResults]);
 
   const reset = () => {
     setActiveGroup(null);
@@ -247,8 +293,8 @@ export function LocationPicker({
             showsVerticalScrollIndicator={false}
           >
             {query ? (
-              searchResults.length > 0 ? (
-                searchResults.map(({ area, group }) => (
+              <>
+                {searchResults.map(({ area, group }) => (
                   <Row
                     key={`${group.value}-${area.value}`}
                     label={
@@ -259,14 +305,38 @@ export function LocationPicker({
                     active={selectedValue === area.value}
                     onPress={() => pick(area.value, locLabel(area, isRTL))}
                   />
-                ))
-              ) : (
-                <AppText
-                  style={[styles.empty, { color: colors.mutedForeground }]}
-                >
-                  {t("locationPicker.noResults")}
-                </AppText>
-              )
+                ))}
+
+                {/* Reference dataset — compounds / projects / districts the
+                    static list doesn't have. Picks store the place NAME as the
+                    location value (adaptive free-text, matched by search). */}
+                {refSuggestions.length > 0 ? (
+                  <>
+                    <AppText
+                      style={[styles.sectionHeader, { color: colors.mutedForeground, textAlign }]}
+                    >
+                      {t("locationPicker.placesSection")}
+                    </AppText>
+                    {refSuggestions.map((p) => {
+                      const nm = (isRTL ? p.name_ar || p.name_en : p.name_en) ?? "";
+                      return (
+                        <Row
+                          key={p.id}
+                          label={nm}
+                          active={selectedValue === nm}
+                          onPress={() => pick(nm, nm)}
+                        />
+                      );
+                    })}
+                  </>
+                ) : null}
+
+                {searchResults.length === 0 && refSuggestions.length === 0 ? (
+                  <AppText style={[styles.empty, { color: colors.mutedForeground }]}>
+                    {t("locationPicker.noResults")}
+                  </AppText>
+                ) : null}
+              </>
             ) : activeGroup ? (
               <>
                 <Row
@@ -402,5 +472,13 @@ const styles = StyleSheet.create({
     textAlign: "center",
     paddingVertical: 32,
     fontSize: 14,
+  },
+  sectionHeader: {
+    fontSize: 11,
+    fontFamily: "Inter_600SemiBold",
+    letterSpacing: 0.5,
+    textTransform: "uppercase",
+    paddingTop: 16,
+    paddingBottom: 6,
   },
 });
