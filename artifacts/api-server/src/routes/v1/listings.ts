@@ -6,6 +6,7 @@ import {
   updateListingHandler,
   deleteListingHandler,
   getSimilarHandler,
+  getListingInsightsHandler,
   createListingLinkHandler,
   bumpListingHandler,
 } from "../../controllers/listingController";
@@ -25,6 +26,7 @@ router.get("/:id", publicRateLimiter, optionalAuth, getListingHandler);
 router.patch("/:id", writeRateLimiter, requireAuth, updateListingHandler);
 router.delete("/:id", writeRateLimiter, requireAuth, deleteListingHandler);
 router.get("/:id/similar", publicRateLimiter, getSimilarHandler);
+router.get("/:id/insights", publicRateLimiter, getListingInsightsHandler);
 router.post("/:id/links", writeRateLimiter, requireAuth, createListingLinkHandler);
 router.post("/:id/bump", writeRateLimiter, requireAuth, bumpListingHandler);
 router.get("/:id/comments", publicRateLimiter, getCommentsHandler);

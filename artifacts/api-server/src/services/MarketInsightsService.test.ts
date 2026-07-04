@@ -1,12 +1,13 @@
 import { describe, it, expect, afterAll } from "vitest";
-import { sql } from "drizzle-orm";
-import { db } from "../__tests__/helpers";
-import { priceObservations } from "@workspace/db/schema";
+import { sql, eq, inArray } from "drizzle-orm";
+import { db, createUser, deleteUsers, randomUUID } from "../__tests__/helpers";
+import { priceObservations, listings, listingAttributes } from "@workspace/db/schema";
 import {
   buildSegmentKey,
   getMarketInsights,
   getPriceHistory,
   rateDeal,
+  getListingDealInsights,
   MIN_SAMPLE,
 } from "./MarketInsightsService";
 
@@ -106,5 +107,62 @@ describe("market insights + deal rating on a real distribution", () => {
     expect(hist.length).toBeGreaterThanOrEqual(1);
     const total = hist.reduce((s, p) => s + p.count, 0);
     expect(total).toBe(prices.length);
+  });
+});
+
+describe("getListingDealInsights (endpoint service)", () => {
+  const uids: string[] = [];
+  const lids: string[] = [];
+
+  afterAll(async () => {
+    if (lids.length) await db.delete(listings).where(inArray(listings.id, lids));
+    await deleteUsers(...uids);
+    await db.execute(sql`DELETE FROM price_observations WHERE segment_key LIKE 'car|deal-insights-%'`);
+  });
+
+  it("combines rating + insights + history for a real listing; 404 semantics via null", async () => {
+    const seller = await createUser({ role: "dealer" });
+    uids.push(seller);
+    const loc = `deal-insights-${Date.now()}`;
+    const specs = { brand: "Toyota", model: "Corolla", year: 2020 };
+
+    // A listing priced BELOW its segment → should rate a good/great deal.
+    const listingId = randomUUID();
+    lids.push(listingId);
+    await db.insert(listings).values({
+      id: listingId,
+      userId: seller,
+      title: "Corolla test",
+      category: "car",
+      basePriceCash: "200000",
+      location: loc,
+      status: "active",
+    });
+    await db.insert(listingAttributes).values({ listingId, specs });
+
+    // Seed the segment with a known distribution (median 500k).
+    const segmentKey = buildSegmentKey({ category: "car", specs, location: loc });
+    for (let i = 1; i <= 9; i++) {
+      await db.insert(priceObservations).values({
+        listingId: null,
+        category: "car",
+        segmentKey,
+        locationKey: loc,
+        price: String(i * 100000),
+        source: `seed-${i}`,
+      });
+    }
+
+    const res = await getListingDealInsights(listingId);
+    expect(res).not.toBeNull();
+    expect(res!.segment_key).toBe(segmentKey);
+    expect(res!.sample_size).toBe(9);
+    expect(res!.median).toBe(500000);
+    // 200k is well below the 500k median → a great deal.
+    expect(res!.rating).toBe("great_deal");
+    expect(res!.history.length).toBeGreaterThanOrEqual(1);
+
+    // Unknown listing → null (controller maps this to 404).
+    expect(await getListingDealInsights(randomUUID())).toBeNull();
   });
 });

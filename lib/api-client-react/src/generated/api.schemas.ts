@@ -1525,6 +1525,49 @@ export interface MapCluster {
   listing_id: string | null;
 }
 
+/**
+ * One month of aggregated real prices for a market segment.
+ */
+export interface PriceHistoryPoint {
+  /** YYYY-MM */
+  month: string;
+  count: number;
+  average?: number | null;
+  median?: number | null;
+  min?: number | null;
+  max?: number | null;
+}
+
+export type DealInsightsRating = typeof DealInsightsRating[keyof typeof DealInsightsRating];
+
+
+export const DealInsightsRating = {
+  great_deal: 'great_deal',
+  good_deal: 'good_deal',
+  fair: 'fair',
+  above_market: 'above_market',
+  insufficient_data: 'insufficient_data',
+} as const;
+
+/**
+ * A listing's price versus its market segment. `rating` is insufficient_data (and the figures null) until the segment has enough real observations — never a fabricated number.
+ */
+export interface DealInsights {
+  rating: DealInsightsRating;
+  segment_key: string;
+  sample_size: number;
+  currency: string;
+  median?: number | null;
+  average?: number | null;
+  min?: number | null;
+  max?: number | null;
+  /** How far this listing's price sits below (−) or above (+) the segment median, in %. */
+  delta_pct?: number | null;
+  /** Last 3-month average vs the prior 3 months, in %. */
+  trend_pct?: number | null;
+  history: PriceHistoryPoint[];
+}
+
 export type PromoCampaignViewStatus = typeof PromoCampaignViewStatus[keyof typeof PromoCampaignViewStatus];
 
 
@@ -2623,6 +2666,12 @@ export type DeleteListing200 = {
 
 export type GetSimilarListings200 = {
   data?: FeedItem[];
+  error?: ApiError | null;
+  meta?: Meta;
+};
+
+export type GetListingInsights200 = {
+  data?: DealInsights;
   error?: ApiError | null;
   meta?: Meta;
 };

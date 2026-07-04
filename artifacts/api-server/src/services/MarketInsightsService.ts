@@ -17,8 +17,8 @@
  *     per-category discriminator, so new dimensions are code-only.
  */
 import { db } from "@workspace/db";
-import { priceObservations } from "@workspace/db/schema";
-import { sql } from "drizzle-orm";
+import { priceObservations, listings, listingAttributes } from "@workspace/db/schema";
+import { sql, eq } from "drizzle-orm";
 import { logger } from "../lib/logger";
 
 export type ListingCategory = "car" | "real_estate" | "industrial";
@@ -296,4 +296,68 @@ export async function rateDeal(
 
   const delta_pct = p50 !== 0 ? Math.round(((price - p50) / p50) * 1000) / 10 : null;
   return { rating, segment_key: segmentKey, sample_size: n, median: p50, delta_pct };
+}
+
+export interface DealInsightsDTO {
+  rating: DealRating;
+  segment_key: string;
+  sample_size: number;
+  currency: string;
+  median: number | null;
+  average: number | null;
+  min: number | null;
+  max: number | null;
+  delta_pct: number | null;
+  trend_pct: number | null;
+  history: PriceHistoryPoint[];
+}
+
+/**
+ * The full deal‑insights view for one listing: its segment's statistics + this
+ * listing's rating within it + a monthly history. Returns null if the listing
+ * does not exist. Read‑only; safe for a public listing card / detail view.
+ */
+export async function getListingDealInsights(listingId: string): Promise<DealInsightsDTO | null> {
+  const [row] = await db
+    .select({
+      category: listings.category,
+      price: listings.basePriceCash,
+      location: listings.location,
+      isRequest: listings.isRequest,
+      specs: listingAttributes.specs,
+    })
+    .from(listings)
+    .leftJoin(listingAttributes, eq(listingAttributes.listingId, listings.id))
+    .where(eq(listings.id, listingId))
+    .limit(1);
+
+  if (!row) return null;
+
+  const category = row.category as ListingCategory;
+  const segmentKey = buildSegmentKey({
+    category,
+    specs: (row.specs as Record<string, unknown>) ?? {},
+    location: row.location,
+  });
+
+  const [insights, verdict, history] = await Promise.all([
+    getMarketInsights(segmentKey),
+    // Requests have no asking price → rating is naturally insufficient/neutral.
+    rateDeal(Number(row.price), segmentKey),
+    getPriceHistory(segmentKey),
+  ]);
+
+  return {
+    rating: verdict.rating,
+    segment_key: segmentKey,
+    sample_size: insights.sample_size,
+    currency: insights.currency,
+    median: insights.median,
+    average: insights.average,
+    min: insights.min,
+    max: insights.max,
+    delta_pct: verdict.delta_pct,
+    trend_pct: insights.trend_pct,
+    history,
+  };
 }

@@ -935,6 +935,36 @@ export const MapClusterSchema = z
   })
   .strict();
 
+// GET /v1/listings/:id/insights — a listing's price vs its market segment.
+// Figures are null (and rating "insufficient_data") until the segment has enough
+// real observations — the response never carries a fabricated number.
+export const PriceHistoryPointSchema = z
+  .object({
+    month: z.string(),
+    count: z.number(),
+    average: z.number().nullable(),
+    median: z.number().nullable(),
+    min: z.number().nullable(),
+    max: z.number().nullable(),
+  })
+  .strict();
+
+export const DealInsightsSchema = z
+  .object({
+    rating: z.enum(["great_deal", "good_deal", "fair", "above_market", "insufficient_data"]),
+    segment_key: z.string(),
+    sample_size: z.number(),
+    currency: z.string(),
+    median: z.number().nullable(),
+    average: z.number().nullable(),
+    min: z.number().nullable(),
+    max: z.number().nullable(),
+    delta_pct: z.number().nullable(),
+    trend_pct: z.number().nullable(),
+    history: z.array(PriceHistoryPointSchema),
+  })
+  .strict();
+
 // GET /v1/search/facets — per-value counts of the currently-visible inventory,
 // optionally scoped to a category. The client gates chips on count > 0 so it
 // never offers a filter that would return an empty page.

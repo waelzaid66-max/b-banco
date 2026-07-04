@@ -116,6 +116,7 @@ import type {
   GetInvoice200,
   GetListing200,
   GetListingComments200,
+  GetListingInsights200,
   GetListings200,
   GetListingsParams,
   GetMapClusters200,
@@ -1220,6 +1221,84 @@ export function useGetSimilarListings<TData = Awaited<ReturnType<typeof getSimil
  ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
 
   const queryOptions = getGetSimilarListingsQueryOptions(id,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+
+
+
+
+
+
+export const getGetListingInsightsUrl = (id: string,) => {
+
+
+
+
+  return `/api/v1/listings/${id}/insights`
+}
+
+/**
+ * How this listing's price compares to its own market segment (category + location + a per-category discriminator). Returns a deal rating, the segment's current statistics and a monthly price history. Ratings and figures appear only once the segment has enough REAL observations; otherwise rating is "insufficient_data" and the figures are null — nothing is fabricated.
+ * @summary Market insights + deal rating for a listing
+ */
+export const getListingInsights = async (id: string, options?: RequestInit): Promise<GetListingInsights200> => {
+
+  return customFetch<GetListingInsights200>(getGetListingInsightsUrl(id),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetListingInsightsQueryKey = (id: string,) => {
+    return [
+    `/api/v1/listings/${id}/insights`
+    ] as const;
+    }
+
+
+export const getGetListingInsightsQueryOptions = <TData = Awaited<ReturnType<typeof getListingInsights>>, TError = ErrorType<unknown>>(id: string, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getListingInsights>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetListingInsightsQueryKey(id);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getListingInsights>>> = ({ signal }) => getListingInsights(id, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, enabled: id !== null && id !== undefined, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getListingInsights>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetListingInsightsQueryResult = NonNullable<Awaited<ReturnType<typeof getListingInsights>>>
+export type GetListingInsightsQueryError = ErrorType<unknown>
+
+
+/**
+ * @summary Market insights + deal rating for a listing
+ */
+
+export function useGetListingInsights<TData = Awaited<ReturnType<typeof getListingInsights>>, TError = ErrorType<unknown>>(
+ id: string, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getListingInsights>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetListingInsightsQueryOptions(id,options)
 
   const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
 

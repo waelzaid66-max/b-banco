@@ -8,6 +8,7 @@ import {
   bumpListing,
 } from "../services/ListingService";
 import { getSimilarListings } from "../services/SearchService";
+import { getListingDealInsights } from "../services/MarketInsightsService";
 import { createLink } from "../services/ListingLinkService";
 import { incrementView } from "../services/LeadService";
 import { isSaved } from "../services/SaveService";
@@ -26,6 +27,7 @@ import {
   CreateListingLinkSchema,
   CreateListingLinkResultSchema,
   BumpListingResultSchema,
+  DealInsightsSchema,
 } from "../validators/schemas";
 import { MEDIA_VERIFY_RETRYABLE } from "../lib/mediaVerify";
 import { ZodError } from "zod";
@@ -134,6 +136,24 @@ export async function getSimilarHandler(req: Request, res: Response) {
   } catch (err) {
     console.error("[Similar]", err);
     return res.status(500).json(errorResponse("INTERNAL_ERROR", "Failed to load similar listings"));
+  }
+}
+
+// GET /v1/listings/:id/insights — deal rating + market insights for a listing.
+// Read-only, public: how this price compares to its market segment. Honest by
+// design (insufficient_data below a real-sample threshold; never fabricated).
+export async function getListingInsightsHandler(req: Request, res: Response) {
+  try {
+    const id = req.params.id as string;
+    const insights = await getListingDealInsights(id);
+    if (!insights) {
+      return res.status(404).json(errorResponse("NOT_FOUND", "Listing not found"));
+    }
+    const validated = validateResponse(DealInsightsSchema, insights);
+    return res.json(successResponse(validated));
+  } catch (err) {
+    console.error("[Insights]", err);
+    return res.status(500).json(errorResponse("INTERNAL_ERROR", "Failed to load insights"));
   }
 }
 

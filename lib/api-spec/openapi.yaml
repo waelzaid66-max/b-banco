@@ -2133,6 +2133,78 @@ components:
           type: string
           nullable: true
 
+    PriceHistoryPoint:
+      type: object
+      description: One month of aggregated real prices for a market segment.
+      required:
+        - month
+        - count
+      properties:
+        month:
+          type: string
+          description: YYYY-MM
+        count:
+          type: integer
+        average:
+          type: number
+          nullable: true
+        median:
+          type: number
+          nullable: true
+        min:
+          type: number
+          nullable: true
+        max:
+          type: number
+          nullable: true
+
+    DealInsights:
+      type: object
+      description: >
+        A listing's price versus its market segment. `rating` is
+        insufficient_data (and the figures null) until the segment has enough
+        real observations — never a fabricated number.
+      required:
+        - rating
+        - segment_key
+        - sample_size
+        - currency
+        - history
+      properties:
+        rating:
+          type: string
+          enum: [great_deal, good_deal, fair, above_market, insufficient_data]
+        segment_key:
+          type: string
+        sample_size:
+          type: integer
+        currency:
+          type: string
+        median:
+          type: number
+          nullable: true
+        average:
+          type: number
+          nullable: true
+        min:
+          type: number
+          nullable: true
+        max:
+          type: number
+          nullable: true
+        delta_pct:
+          type: number
+          nullable: true
+          description: How far this listing's price sits below (−) or above (+) the segment median, in %.
+        trend_pct:
+          type: number
+          nullable: true
+          description: Last 3-month average vs the prior 3 months, in %.
+        history:
+          type: array
+          items:
+            $ref: "#/components/schemas/PriceHistoryPoint"
+
     PromoCampaignView:
       type: object
       description: >
@@ -3792,6 +3864,40 @@ paths:
                     type: array
                     items:
                       $ref: "#/components/schemas/FeedItem"
+                  error:
+                    $ref: "#/components/schemas/ApiError"
+                    nullable: true
+                  meta:
+                    $ref: "#/components/schemas/Meta"
+
+  /v1/listings/{id}/insights:
+    get:
+      operationId: getListingInsights
+      summary: Market insights + deal rating for a listing
+      description: >-
+        How this listing's price compares to its own market segment (category +
+        location + a per-category discriminator). Returns a deal rating, the
+        segment's current statistics and a monthly price history. Ratings and
+        figures appear only once the segment has enough REAL observations;
+        otherwise rating is "insufficient_data" and the figures are null — nothing
+        is fabricated.
+      tags: [listings]
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Deal insights
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    $ref: "#/components/schemas/DealInsights"
                   error:
                     $ref: "#/components/schemas/ApiError"
                     nullable: true

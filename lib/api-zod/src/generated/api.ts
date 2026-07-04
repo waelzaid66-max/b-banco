@@ -553,6 +553,47 @@ export const GetSimilarListingsResponse = zod.object({
 
 
 /**
+ * How this listing's price compares to its own market segment (category + location + a per-category discriminator). Returns a deal rating, the segment's current statistics and a monthly price history. Ratings and figures appear only once the segment has enough REAL observations; otherwise rating is "insufficient_data" and the figures are null — nothing is fabricated.
+ * @summary Market insights + deal rating for a listing
+ */
+export const GetListingInsightsParams = zod.object({
+  "id": zod.coerce.string()
+})
+
+export const GetListingInsightsResponse = zod.object({
+  "data": zod.object({
+  "rating": zod.enum(['great_deal', 'good_deal', 'fair', 'above_market', 'insufficient_data']),
+  "segment_key": zod.string(),
+  "sample_size": zod.number(),
+  "currency": zod.string(),
+  "median": zod.number().nullish(),
+  "average": zod.number().nullish(),
+  "min": zod.number().nullish(),
+  "max": zod.number().nullish(),
+  "delta_pct": zod.number().nullish().describe('How far this listing\'s price sits below (−) or above (+) the segment median, in %.'),
+  "trend_pct": zod.number().nullish().describe('Last 3-month average vs the prior 3 months, in %.'),
+  "history": zod.array(zod.object({
+  "month": zod.string().describe('YYYY-MM'),
+  "count": zod.number(),
+  "average": zod.number().nullish(),
+  "median": zod.number().nullish(),
+  "min": zod.number().nullish(),
+  "max": zod.number().nullish()
+}).describe('One month of aggregated real prices for a market segment.'))
+}).optional().describe('A listing\'s price versus its market segment. `rating` is insufficient_data (and the figures null) until the segment has enough real observations — never a fabricated number.\n'),
+  "error": zod.object({
+  "code": zod.enum(['INVALID_DATA', 'NOT_FOUND', 'UNAUTHORIZED', 'INTERNAL_ERROR', 'FORBIDDEN', 'RATE_LIMITED']),
+  "message": zod.string()
+}).nullish(),
+  "meta": zod.object({
+  "cursor": zod.string().optional(),
+  "has_next": zod.boolean().optional(),
+  "total": zod.number().optional()
+}).optional()
+})
+
+
+/**
  * Owner-only. Sets bumped_at to now so the listing sorts by COALESCE(bumped_at, created_at) in recency feeds and search. NEVER changes created_at — the true publish date is preserved. Rate-limited with a cooldown; only active, publicly visible listings can be recycled.
  * @summary Recycle (renew) a listing to the top of recency feeds
  */
