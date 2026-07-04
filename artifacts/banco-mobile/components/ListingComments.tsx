@@ -11,7 +11,8 @@ import {
 import * as Haptics from "expo-haptics";
 import { router } from "expo-router";
 import React, { useMemo, useState } from "react";
-import { ActivityIndicator, Alert, Pressable, StyleSheet, TextInput, View } from "react-native";
+import { ActivityIndicator, Alert, Pressable, StyleSheet, View } from "react-native";
+import { AppTextInput as TextInput } from "@/components/AppTextInput";
 
 import { AppText } from "@/components/AppText";
 import { useI18n } from "@/context/LanguageContext";

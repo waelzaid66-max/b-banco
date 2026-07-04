@@ -1,5 +1,6 @@
 import { useUser } from "@clerk/expo";
 import { Feather, Ionicons } from "@/components/icons";
+import { AppTextInput as TextInput } from "@/components/AppTextInput";
 import {
   createListing,
   verifyUpload,
@@ -25,7 +26,6 @@ import {
   Pressable,
   StyleSheet,
   Switch,
-  TextInput,
   View,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";

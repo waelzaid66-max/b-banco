@@ -1,4 +1,6 @@
 import { Feather, Ionicons } from "@/components/icons";
+import { AppTextInput as TextInput } from "@/components/AppTextInput";
+import type { TextInput as RNTextInput } from "react-native";
 import {
   getAutocomplete,
   sendBehaviorSignal,
@@ -12,7 +14,6 @@ import {
   Pressable,
   ScrollView,
   StyleSheet,
-  TextInput,
   View,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
@@ -284,7 +285,7 @@ export default function SearchScreen() {
 
   const autocompleteTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const commitTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const inputRef = useRef<TextInput>(null);
+  const inputRef = useRef<RNTextInput>(null);
 
   useEffect(
     () => () => {

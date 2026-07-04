@@ -1,3 +1,4 @@
+import { forwardRef } from "react";
 import { TextInput as RNTextInput, StyleSheet, type TextInputProps } from "react-native";
 
 import { useI18n } from "@/context/LanguageContext";
@@ -17,18 +18,24 @@ const INTER_TO_CAIRO: Record<string, string> = {
  * Inter font family for the matching Cairo weight and sets RTL writing
  * direction, so typed Arabic shapes correctly. In English it renders untouched.
  */
-export function AppTextInput({ style, ...props }: TextInputProps) {
-  const { isRTL } = useI18n();
-  if (!isRTL) {
-    return <RNTextInput style={style} {...props} />;
-  }
-  const flat = (StyleSheet.flatten(style) || {}) as { fontFamily?: string };
-  const family = flat.fontFamily;
-  const mapped = family ? INTER_TO_CAIRO[family] ?? family : "Cairo_400Regular";
-  return (
-    <RNTextInput
-      style={[style, { fontFamily: mapped, writingDirection: "rtl" }]}
-      {...props}
-    />
-  );
-}
+export const AppTextInput = forwardRef<RNTextInput, TextInputProps>(
+  function AppTextInput({ style, ...props }, ref) {
+    const { isRTL } = useI18n();
+    if (!isRTL) {
+      return <RNTextInput ref={ref} style={style} {...props} />;
+    }
+    const flat = (StyleSheet.flatten(style) || {}) as { fontFamily?: string };
+    const family = flat.fontFamily;
+    // Only remap a pinned Inter weight → Cairo. A non-Inter family, or none at
+    // all (system font, which shapes Arabic fine), is left untouched — so this is
+    // a safe drop-in for ANY TextInput and never changes a field that already works.
+    const mapped = family ? INTER_TO_CAIRO[family] : undefined;
+    return (
+      <RNTextInput
+        ref={ref}
+        style={[style, mapped ? { fontFamily: mapped } : null, { writingDirection: "rtl" }]}
+        {...props}
+      />
+    );
+  },
+);
