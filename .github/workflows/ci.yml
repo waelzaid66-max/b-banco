@@ -22,9 +22,10 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+      # pnpm version is pinned by "packageManager" in package.json (single source
+      # of truth for Corepack + local + CI). Do NOT add a `version:` here — with
+      # both set, action-setup fails: "Multiple versions of pnpm specified".
       - uses: pnpm/action-setup@v4
-        with:
-          version: 11
       - uses: actions/setup-node@v4
         with:
           node-version: 24
@@ -67,9 +68,10 @@ jobs:
       TZ: UTC
     steps:
       - uses: actions/checkout@v4
+      # pnpm version is pinned by "packageManager" in package.json (single source
+      # of truth for Corepack + local + CI). Do NOT add a `version:` here — with
+      # both set, action-setup fails: "Multiple versions of pnpm specified".
       - uses: pnpm/action-setup@v4
-        with:
-          version: 11
       - uses: actions/setup-node@v4
         with:
           node-version: 24
