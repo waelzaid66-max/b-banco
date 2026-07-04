@@ -330,14 +330,37 @@ export const brands = pgTable(
   "brands",
   {
     id: uuid("id").defaultRandom().primaryKey(),
+    // Canonical / English display name. Kept as-is so every existing query,
+    // insert and the auto-learn path (learnBrand) stay byte-compatible.
     name: text("name").notNull(),
     slug: text("slug").notNull().unique(),
     category: listingCategoryEnum("category").notNull().default("car"),
+    // ── Global brand-reference metadata (ADDITIVE, all optional/defaulted) ──
+    // Enriches the SAME table the marketplace already runs on, so search,
+    // filters, the create form and admin pick it up with no API/logic change and
+    // ZERO duplication. Auto-learned brands simply carry the defaults until an
+    // admin enriches them. Kept flat here (not a parallel table) precisely to
+    // avoid a second source of truth; the brand→model→…→variant hierarchy already
+    // exists via the models / car_variants tables below.
+    nameAr: text("name_ar"),
+    country: text("country"),
+    parentCompany: text("parent_company"),
+    foundedYear: integer("founded_year"),
+    logoUrl: text("logo_url"),
+    isActive: boolean("is_active").notNull().default(true),
+    isPremium: boolean("is_premium").notNull().default(false),
+    isElectric: boolean("is_electric").notNull().default(false),
+    isCommercial: boolean("is_commercial").notNull().default(false),
+    popularity: integer("popularity").notNull().default(0),
+    searchKeywords: jsonb("search_keywords").$type<string[]>().notNull().default([]),
     createdAt: timestamp("created_at").defaultNow(),
+    updatedAt: timestamp("updated_at").defaultNow(),
   },
   (table) => [
     index("idx_brands_slug").on(table.slug),
     index("idx_brands_category").on(table.category),
+    index("idx_brands_active").on(table.isActive),
+    index("idx_brands_popularity").on(table.popularity),
   ]
 );
 
