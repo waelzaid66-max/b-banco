@@ -12,14 +12,14 @@ import { transformFeedItems } from "./BffService";
 import { getDbUser } from "./UserService";
 import { publicVisibilityConditions } from "../lib/feedVisibility";
 import { createNotification } from "./NotificationService";
-import { ObjectStorageService } from "../lib/objectStorage";
+import { getObjectStorageService } from "../lib/objectStorageProvider";
 import type {
   CompanyProfile,
   CompanyDirectoryItem,
   FeedItem,
 } from "../validators/schemas";
 
-const objectStorageService = new ObjectStorageService();
+const objectStorageService = getObjectStorageService();
 
 const BUSINESS_ROLES = ["dealer", "company", "enterprise"];
 type Industry =

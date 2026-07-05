@@ -10,9 +10,9 @@ import { and, eq, or, desc, asc, ne, isNull, inArray, sql } from "drizzle-orm";
 import { createNotification } from "./NotificationService";
 import { checkMessageRate, checkConversationRate } from "./AbuseService";
 import { publicVisibilityConditions } from "../lib/feedVisibility";
-import { ObjectStorageService } from "../lib/objectStorage";
+import { getObjectStorageService } from "../lib/objectStorageProvider";
 
-const objectStorageService = new ObjectStorageService();
+const objectStorageService = getObjectStorageService();
 
 type CodedError = Error & { code?: string };
 function codedError(code: string, message: string): CodedError {

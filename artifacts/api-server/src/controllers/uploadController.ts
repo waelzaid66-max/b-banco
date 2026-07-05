@@ -3,7 +3,8 @@ import { Readable } from "stream";
 import { and, eq, like, or } from "drizzle-orm";
 import { db } from "@workspace/db";
 import { listingMedia, listings, users } from "@workspace/db/schema";
-import { ObjectStorageService, ObjectNotFoundError } from "../lib/objectStorage";
+import { ObjectNotFoundError } from "../lib/objectStorage";
+import { getObjectStorageService } from "../lib/objectStorageProvider";
 import { publicVisibilityConditions } from "../lib/feedVisibility";
 import {
   successResponse,
@@ -45,7 +46,7 @@ const ALLOWED_CONTENT_TYPES = new Set([
 
 const UPLOADS_PATH_PREFIX = "/api/v1/uploads/objects/";
 
-const objectStorageService = new ObjectStorageService();
+const objectStorageService = getObjectStorageService();
 
 /**
  * Returns true if the given wildcardPath (the path segment after

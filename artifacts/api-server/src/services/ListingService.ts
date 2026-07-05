@@ -20,12 +20,12 @@ import { checkListingQuota, type UserRole } from "./PlanService";
 import { getLinksForListing } from "./ListingLinkService";
 import { mintContactToken } from "./LeadService";
 import { publicVisibilityConditions } from "../lib/feedVisibility";
-import { ObjectStorageService } from "../lib/objectStorage";
+import { getObjectStorageService } from "../lib/objectStorageProvider";
 import { MEDIA_VERIFY_RETRYABLE } from "../lib/mediaVerify";
 import type { CreateListingSchema } from "../validators/schemas";
 import type { z } from "zod";
 
-const objectStorageService = new ObjectStorageService();
+const objectStorageService = getObjectStorageService();
 
 type CreateListingInput = z.infer<typeof import("../validators/schemas").CreateListingSchema>;
 

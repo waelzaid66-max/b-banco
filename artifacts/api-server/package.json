@@ -18,6 +18,8 @@
     "backfill:observations": "tsx src/backfill-observations.ts"
   },
   "dependencies": {
+    "@aws-sdk/client-s3": "^3.1079.0",
+    "@aws-sdk/s3-request-presigner": "^3.1079.0",
     "@clerk/express": "^2.1.23",
     "@clerk/shared": "^4.15.0",
     "@google-cloud/storage": "^7.21.0",
