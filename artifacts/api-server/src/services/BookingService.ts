@@ -10,10 +10,28 @@
  */
 import { db } from "@workspace/db";
 import { bookings, listings, listingAttributes, users } from "@workspace/db/schema";
-import { and, eq, inArray, lt, gt } from "drizzle-orm";
+import { and, eq, inArray, lt, gt, desc } from "drizzle-orm";
 
 function codedError(code: string, message: string): Error {
   return Object.assign(new Error(message), { code });
+}
+
+type BookingRow = typeof bookings.$inferSelect;
+
+function toDTO(b: BookingRow): BookingDTO {
+  return {
+    id: b.id,
+    listing_id: b.listingId,
+    check_in: String(b.checkIn),
+    check_out: String(b.checkOut),
+    nights: b.nights,
+    guests: b.guests,
+    price_per_night: b.pricePerNight == null ? null : Number(b.pricePerNight),
+    total_price: b.totalPrice == null ? null : Number(b.totalPrice),
+    currency: b.currency,
+    status: b.status,
+    created_at: b.createdAt ? b.createdAt.toISOString() : null,
+  };
 }
 
 // A booking blocks the dates while it is live (a rejected/cancelled one frees them).
@@ -140,17 +158,133 @@ export async function createBooking(
     })
     .returning();
 
-  return {
-    id: b.id,
-    listing_id: b.listingId,
-    check_in: String(b.checkIn),
-    check_out: String(b.checkOut),
-    nights: b.nights,
-    guests: b.guests,
-    price_per_night: b.pricePerNight == null ? null : Number(b.pricePerNight),
-    total_price: b.totalPrice == null ? null : Number(b.totalPrice),
-    currency: b.currency,
-    status: b.status,
-    created_at: b.createdAt ? b.createdAt.toISOString() : null,
-  };
+  return toDTO(b);
+}
+
+/* ── Booking lifecycle: list + confirm / reject / cancel ──────────────── */
+
+export interface BookingListItem extends BookingDTO {
+  listing_title: string;
+  listing_location: string | null;
+  /** The other party's display name — the guest (host view) or the host (guest view). */
+  counterparty_name: string | null;
+}
+
+/**
+ * A person's bookings, from one of two sides:
+ *  - role "guest": stays I requested (guestId = me).
+ *  - role "host":  requests on listings I own (listing.userId = me).
+ * Enriched with the listing title/location and the counterparty name so the
+ * inbox renders without extra round-trips. Newest first.
+ */
+export async function listBookings(
+  clerkId: string,
+  role: "guest" | "host",
+): Promise<BookingListItem[]> {
+  const [me] = await db
+    .select({ id: users.id })
+    .from(users)
+    .where(eq(users.clerkId, clerkId))
+    .limit(1);
+  if (!me) throw codedError("UNAUTHORIZED", "User not found");
+
+  const rows = await db
+    .select({
+      booking: bookings,
+      listingTitle: listings.title,
+      listingLocation: listings.location,
+      guestName: users.name,
+    })
+    .from(bookings)
+    .innerJoin(listings, eq(listings.id, bookings.listingId))
+    .leftJoin(users, eq(users.id, bookings.guestId))
+    .where(role === "host" ? eq(listings.userId, me.id) : eq(bookings.guestId, me.id))
+    .orderBy(desc(bookings.createdAt));
+
+  // For the host view the counterparty is the guest (already joined). For the
+  // guest view it is the host — fetch their names in one extra query, keyed by
+  // listing owner, to avoid a second join alias on `users`.
+  let hostNames = new Map<string, string>();
+  if (role === "guest") {
+    const ownerRows = await db
+      .select({ listingId: listings.id, ownerName: users.name })
+      .from(listings)
+      .leftJoin(users, eq(users.id, listings.userId))
+      .where(
+        inArray(
+          listings.id,
+          rows.map((r) => r.booking.listingId),
+        ),
+      );
+    hostNames = new Map(ownerRows.map((o) => [o.listingId, o.ownerName ?? ""]));
+  }
+
+  return rows.map((r) => ({
+    ...toDTO(r.booking),
+    listing_title: r.listingTitle ?? "",
+    listing_location: r.listingLocation ?? null,
+    counterparty_name:
+      role === "host" ? r.guestName ?? null : hostNames.get(r.booking.listingId) ?? null,
+  }));
+}
+
+// Which transitions each side may drive, and the state they require.
+const HOST_ACTIONS: Record<string, { from: string[]; to: string }> = {
+  confirm: { from: ["requested"], to: "confirmed" },
+  reject: { from: ["requested"], to: "rejected" },
+};
+const GUEST_ACTIONS: Record<string, { from: string[]; to: string }> = {
+  cancel: { from: ["requested", "confirmed"], to: "cancelled" },
+};
+
+/**
+ * Drive a booking through its lifecycle with strict role separation:
+ *  - the HOST (listing owner) may confirm or reject a still-`requested` booking;
+ *  - the GUEST may cancel their own requested/confirmed booking.
+ * Rejecting/cancelling frees the dates (they leave the active set), so the
+ * calendar re-opens automatically. Idempotent-safe: acting on a booking already
+ * in the target state is a no-op success; an illegal transition is INVALID_DATA.
+ */
+export async function updateBookingStatus(
+  clerkId: string,
+  bookingId: string,
+  action: "confirm" | "reject" | "cancel",
+): Promise<BookingDTO> {
+  const [me] = await db
+    .select({ id: users.id })
+    .from(users)
+    .where(eq(users.clerkId, clerkId))
+    .limit(1);
+  if (!me) throw codedError("UNAUTHORIZED", "User not found");
+
+  const [row] = await db
+    .select({ booking: bookings, ownerId: listings.userId })
+    .from(bookings)
+    .innerJoin(listings, eq(listings.id, bookings.listingId))
+    .where(eq(bookings.id, bookingId))
+    .limit(1);
+  if (!row) throw codedError("NOT_FOUND", "Booking not found");
+
+  const isHostAction = action === "confirm" || action === "reject";
+  const spec = isHostAction ? HOST_ACTIONS[action] : GUEST_ACTIONS[action];
+
+  // Authorisation: host actions require ownership; the cancel action requires
+  // being the guest who made the booking.
+  if (isHostAction) {
+    if (row.ownerId !== me.id) throw codedError("FORBIDDEN", "Only the host can do that");
+  } else if (row.booking.guestId !== me.id) {
+    throw codedError("FORBIDDEN", "Only the guest can cancel this booking");
+  }
+
+  if (row.booking.status === spec.to) return toDTO(row.booking); // no-op success
+  if (!spec.from.includes(row.booking.status)) {
+    throw codedError("INVALID_DATA", `Cannot ${action} a ${row.booking.status} booking`);
+  }
+
+  const [updated] = await db
+    .update(bookings)
+    .set({ status: spec.to })
+    .where(eq(bookings.id, bookingId))
+    .returning();
+  return toDTO(updated);
 }

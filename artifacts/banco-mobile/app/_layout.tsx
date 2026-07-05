@@ -157,6 +157,10 @@ function RootLayoutNav() {
         options={{ headerShown: false, animation: "slide_from_right" }}
       />
       <Stack.Screen
+        name="bookings"
+        options={{ headerShown: false, animation: "slide_from_right" }}
+      />
+      <Stack.Screen
         name="rfq/index"
         options={{ headerShown: false, animation: "slide_from_right" }}
       />

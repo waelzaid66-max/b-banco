@@ -693,6 +693,83 @@ export const CreateBookingResponse = zod.object({
 
 
 /**
+ * The signed-in user's short-stay bookings from one side. role=guest lists stays I requested; role=host lists incoming requests on listings I own. Each item carries the listing title/location and the counterparty name so the inbox renders directly. Newest first.
+ * @summary My bookings — as guest or as host
+ */
+export const listBookingsQueryRoleDefault = `guest`;
+
+export const ListBookingsQueryParams = zod.object({
+  "role": zod.enum(['guest', 'host']).default(listBookingsQueryRoleDefault)
+})
+
+export const ListBookingsResponse = zod.object({
+  "data": zod.array(zod.object({
+  "id": zod.string(),
+  "listing_id": zod.string(),
+  "check_in": zod.string(),
+  "check_out": zod.string(),
+  "nights": zod.number(),
+  "guests": zod.number(),
+  "price_per_night": zod.number().nullish(),
+  "total_price": zod.number().nullish(),
+  "currency": zod.string(),
+  "status": zod.string(),
+  "created_at": zod.string().nullish(),
+  "listing_title": zod.string(),
+  "listing_location": zod.string().nullish(),
+  "counterparty_name": zod.string().nullish()
+}).describe('A booking enriched for the inbox — the underlying reservation plus the listing title\/location and the other party\'s name (the guest in the host view, the host in the guest view).')).optional(),
+  "error": zod.object({
+  "code": zod.enum(['INVALID_DATA', 'NOT_FOUND', 'UNAUTHORIZED', 'INTERNAL_ERROR', 'FORBIDDEN', 'RATE_LIMITED']),
+  "message": zod.string()
+}).nullish(),
+  "meta": zod.object({
+  "cursor": zod.string().optional(),
+  "has_next": zod.boolean().optional(),
+  "total": zod.number().optional()
+}).optional()
+})
+
+
+/**
+ * Drive a booking through its lifecycle with role separation. The host (listing owner) may confirm or reject a requested booking; the guest may cancel their own requested/confirmed booking. Rejecting/cancelling frees the dates. No-op success when already in the target state.
+ * @summary Confirm / reject / cancel a booking
+ */
+export const UpdateBookingParams = zod.object({
+  "id": zod.coerce.string()
+})
+
+export const UpdateBookingBody = zod.object({
+  "action": zod.enum(['confirm', 'reject', 'cancel']).describe('confirm\/reject are host-only (on a requested booking); cancel is guest-only (on a requested\/confirmed booking).')
+})
+
+export const UpdateBookingResponse = zod.object({
+  "data": zod.object({
+  "id": zod.string(),
+  "listing_id": zod.string(),
+  "check_in": zod.string(),
+  "check_out": zod.string(),
+  "nights": zod.number(),
+  "guests": zod.number(),
+  "price_per_night": zod.number().nullish(),
+  "total_price": zod.number().nullish(),
+  "currency": zod.string(),
+  "status": zod.string(),
+  "created_at": zod.string().nullish()
+}).optional().describe('A short‑stay reservation of a furnished\/daily rental (hotel model).'),
+  "error": zod.object({
+  "code": zod.enum(['INVALID_DATA', 'NOT_FOUND', 'UNAUTHORIZED', 'INTERNAL_ERROR', 'FORBIDDEN', 'RATE_LIMITED']),
+  "message": zod.string()
+}).nullish(),
+  "meta": zod.object({
+  "cursor": zod.string().optional(),
+  "has_next": zod.boolean().optional(),
+  "total": zod.number().optional()
+}).optional()
+})
+
+
+/**
  * Owner-only. Sets bumped_at to now so the listing sorts by COALESCE(bumped_at, created_at) in recency feeds and search. NEVER changes created_at — the true publish date is preserved. Rate-limited with a cooldown; only active, publicly visible listings can be recycled.
  * @summary Recycle (renew) a listing to the top of recency feeds
  */

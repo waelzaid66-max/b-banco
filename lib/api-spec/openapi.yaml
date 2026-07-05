@@ -2299,6 +2299,60 @@ components:
           type: string
           nullable: true
 
+    BookingListItem:
+      type: object
+      description: >-
+        A booking enriched for the inbox — the underlying reservation plus the
+        listing title/location and the other party's name (the guest in the host
+        view, the host in the guest view).
+      required:
+        [id, listing_id, check_in, check_out, nights, guests, currency, status, listing_title]
+      properties:
+        id:
+          type: string
+        listing_id:
+          type: string
+        check_in:
+          type: string
+        check_out:
+          type: string
+        nights:
+          type: integer
+        guests:
+          type: integer
+        price_per_night:
+          type: number
+          nullable: true
+        total_price:
+          type: number
+          nullable: true
+        currency:
+          type: string
+        status:
+          type: string
+        created_at:
+          type: string
+          nullable: true
+        listing_title:
+          type: string
+        listing_location:
+          type: string
+          nullable: true
+        counterparty_name:
+          type: string
+          nullable: true
+
+    UpdateBookingBody:
+      type: object
+      required: [action]
+      properties:
+        action:
+          type: string
+          enum: [confirm, reject, cancel]
+          description: >-
+            confirm/reject are host-only (on a requested booking); cancel is
+            guest-only (on a requested/confirmed booking).
+
     PromoCampaignView:
       type: object
       description: >
@@ -4099,6 +4153,84 @@ paths:
       responses:
         "200":
           description: Booking created
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    $ref: "#/components/schemas/Booking"
+                  error:
+                    $ref: "#/components/schemas/ApiError"
+                    nullable: true
+                  meta:
+                    $ref: "#/components/schemas/Meta"
+
+  /v1/bookings:
+    get:
+      operationId: listBookings
+      summary: My bookings — as guest or as host
+      description: >-
+        The signed-in user's short-stay bookings from one side. role=guest lists
+        stays I requested; role=host lists incoming requests on listings I own.
+        Each item carries the listing title/location and the counterparty name so
+        the inbox renders directly. Newest first.
+      tags: [bookings]
+      security:
+        - ClerkAuth: []
+      parameters:
+        - in: query
+          name: role
+          required: false
+          schema:
+            type: string
+            enum: [guest, host]
+            default: guest
+      responses:
+        "200":
+          description: My bookings
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/BookingListItem"
+                  error:
+                    $ref: "#/components/schemas/ApiError"
+                    nullable: true
+                  meta:
+                    $ref: "#/components/schemas/Meta"
+
+  /v1/bookings/{id}:
+    patch:
+      operationId: updateBooking
+      summary: Confirm / reject / cancel a booking
+      description: >-
+        Drive a booking through its lifecycle with role separation. The host
+        (listing owner) may confirm or reject a requested booking; the guest may
+        cancel their own requested/confirmed booking. Rejecting/cancelling frees
+        the dates. No-op success when already in the target state.
+      tags: [bookings]
+      security:
+        - ClerkAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdateBookingBody"
+      responses:
+        "200":
+          description: Updated booking
           content:
             application/json:
               schema:

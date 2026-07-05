@@ -881,6 +881,15 @@ export default function ProfileScreen() {
         },
       },
       {
+        key: "bookings",
+        icon: "calendar",
+        label: t("profile.menuBookings"),
+        onPress: () => {
+          setShowMenu(false);
+          router.push("/bookings");
+        },
+      },
+      {
         key: "settings",
         icon: "settings",
         label: t("profile.menuSettings"),

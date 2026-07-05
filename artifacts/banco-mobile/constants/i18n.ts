@@ -757,6 +757,7 @@ const en = {
     menuVerify: "Verify account",
     menuPlans: "Subscriptions & packages",
     menuWallet: "Payments",
+    menuBookings: "Bookings",
     menuSettings: "Settings",
   },
   saved: {
@@ -1701,6 +1702,23 @@ const en = {
     confirmedTitle: "Booking requested",
     confirmedBody: "The host will confirm your stay shortly. You can chat with them from this listing.",
   },
+  bookings: {
+    title: "Bookings",
+    tabTrips: "My trips",
+    tabRequests: "Requests",
+    emptyTrips: "No bookings yet. Find a furnished daily rental to book your first stay.",
+    emptyRequests: "No booking requests on your listings yet.",
+    errorBody: "Couldn't load your bookings.",
+    confirm: "Confirm",
+    reject: "Reject",
+    cancel: "Cancel",
+    status: {
+      requested: "Pending",
+      confirmed: "Confirmed",
+      rejected: "Rejected",
+      cancelled: "Cancelled",
+    },
+  },
 };
 
 const ar: typeof en = {
@@ -2458,6 +2476,7 @@ const ar: typeof en = {
     menuVerify: "توثيق الحساب",
     menuPlans: "الاشتراكات والباقات",
     menuWallet: "المدفوعات",
+    menuBookings: "الحجوزات",
     menuSettings: "الإعدادات",
   },
   saved: {
@@ -3398,6 +3417,23 @@ const ar: typeof en = {
     errorTaken: "هذه التواريخ حُجزت للتو. برجاء الاختيار من جديد.",
     confirmedTitle: "تم إرسال الحجز",
     confirmedBody: "سيؤكد المالك إقامتك قريبًا. يمكنك مراسلته من هذا الإعلان.",
+  },
+  bookings: {
+    title: "الحجوزات",
+    tabTrips: "رحلاتي",
+    tabRequests: "الطلبات",
+    emptyTrips: "لا حجوزات بعد. ابحث عن إيجار يومي مفروش واحجز أول إقامة.",
+    emptyRequests: "لا توجد طلبات حجز على إعلاناتك بعد.",
+    errorBody: "تعذّر تحميل حجوزاتك.",
+    confirm: "تأكيد",
+    reject: "رفض",
+    cancel: "إلغاء",
+    status: {
+      requested: "قيد الانتظار",
+      confirmed: "مؤكَّد",
+      rejected: "مرفوض",
+      cancelled: "ملغى",
+    },
   },
 };
 

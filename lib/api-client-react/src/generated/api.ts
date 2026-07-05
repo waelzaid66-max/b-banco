@@ -154,6 +154,8 @@ import type {
   GetTrending200,
   GetWallet200,
   HealthStatus,
+  ListBookings200,
+  ListBookingsParams,
   ListCompanies200,
   ListCompaniesParams,
   ListConversations200,
@@ -234,6 +236,8 @@ import type {
   UnregisterPushToken200,
   UnregisterPushTokenBody,
   UpdateAdminPlan200,
+  UpdateBooking200,
+  UpdateBookingBody,
   UpdateEmailConfig200,
   UpdateFinancingIntermediary200,
   UpdateFinancingIntermediaryBody,
@@ -1549,6 +1553,163 @@ export const useCreateBooking = <TError = ErrorType<unknown>,
         TContext
       > => {
       return useMutation(getCreateBookingMutationOptions(options));
+    }
+
+export const getListBookingsUrl = (params?: ListBookingsParams,) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? 'null' : String(value))
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0 ? `/api/v1/bookings?${stringifiedParams}` : `/api/v1/bookings`
+}
+
+/**
+ * The signed-in user's short-stay bookings from one side. role=guest lists stays I requested; role=host lists incoming requests on listings I own. Each item carries the listing title/location and the counterparty name so the inbox renders directly. Newest first.
+ * @summary My bookings — as guest or as host
+ */
+export const listBookings = async (params?: ListBookingsParams, options?: RequestInit): Promise<ListBookings200> => {
+
+  return customFetch<ListBookings200>(getListBookingsUrl(params),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getListBookingsQueryKey = (params?: ListBookingsParams,) => {
+    return [
+    `/api/v1/bookings`, ...(params ? [params] : [])
+    ] as const;
+    }
+
+
+export const getListBookingsQueryOptions = <TData = Awaited<ReturnType<typeof listBookings>>, TError = ErrorType<unknown>>(params?: ListBookingsParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listBookings>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getListBookingsQueryKey(params);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof listBookings>>> = ({ signal }) => listBookings(params, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof listBookings>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type ListBookingsQueryResult = NonNullable<Awaited<ReturnType<typeof listBookings>>>
+export type ListBookingsQueryError = ErrorType<unknown>
+
+
+/**
+ * @summary My bookings — as guest or as host
+ */
+
+export function useListBookings<TData = Awaited<ReturnType<typeof listBookings>>, TError = ErrorType<unknown>>(
+ params?: ListBookingsParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listBookings>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getListBookingsQueryOptions(params,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+
+
+
+
+
+
+export const getUpdateBookingUrl = (id: string,) => {
+
+
+
+
+  return `/api/v1/bookings/${id}`
+}
+
+/**
+ * Drive a booking through its lifecycle with role separation. The host (listing owner) may confirm or reject a requested booking; the guest may cancel their own requested/confirmed booking. Rejecting/cancelling frees the dates. No-op success when already in the target state.
+ * @summary Confirm / reject / cancel a booking
+ */
+export const updateBooking = async (id: string,
+    updateBookingBody: UpdateBookingBody, options?: RequestInit): Promise<UpdateBooking200> => {
+
+  return customFetch<UpdateBooking200>(getUpdateBookingUrl(id),
+  {
+    ...options,
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(updateBookingBody)
+  }
+);}
+
+
+
+
+export const getUpdateBookingMutationOptions = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof updateBooking>>, TError,{id: string;data: BodyType<UpdateBookingBody>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof updateBooking>>, TError,{id: string;data: BodyType<UpdateBookingBody>}, TContext> => {
+
+const mutationKey = ['updateBooking'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof updateBooking>>, {id: string;data: BodyType<UpdateBookingBody>}> = (props) => {
+          const {id,data} = props ?? {};
+
+          return  updateBooking(id,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type UpdateBookingMutationResult = NonNullable<Awaited<ReturnType<typeof updateBooking>>>
+    export type UpdateBookingMutationBody = BodyType<UpdateBookingBody>
+    export type UpdateBookingMutationError = ErrorType<unknown>
+
+    /**
+ * @summary Confirm / reject / cancel a booking
+ */
+export const useUpdateBooking = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof updateBooking>>, TError,{id: string;data: BodyType<UpdateBookingBody>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof updateBooking>>,
+        TError,
+        {id: string;data: BodyType<UpdateBookingBody>},
+        TContext
+      > => {
+      return useMutation(getUpdateBookingMutationOptions(options));
     }
 
 export const getBumpListingUrl = (id: string,) => {

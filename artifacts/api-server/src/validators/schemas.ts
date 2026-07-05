@@ -1010,6 +1010,33 @@ export const CreateBookingSchema = z
   })
   .strict();
 
+export const BookingListItemSchema = z
+  .object({
+    id: z.string(),
+    listing_id: z.string(),
+    check_in: z.string(),
+    check_out: z.string(),
+    nights: z.number(),
+    guests: z.number(),
+    price_per_night: z.number().nullable(),
+    total_price: z.number().nullable(),
+    currency: z.string(),
+    status: z.string(),
+    created_at: z.string().nullable(),
+    listing_title: z.string(),
+    listing_location: z.string().nullable(),
+    counterparty_name: z.string().nullable(),
+  })
+  .strict();
+
+export const ListBookingsQuerySchema = z.object({
+  role: z.enum(["guest", "host"]).default("guest"),
+});
+
+export const UpdateBookingSchema = z
+  .object({ action: z.enum(["confirm", "reject", "cancel"]) })
+  .strict();
+
 // GET /v1/search/facets — per-value counts of the currently-visible inventory,
 // optionally scoped to a category. The client gates chips on count > 0 so it
 // never offers a filter that would return an empty page.

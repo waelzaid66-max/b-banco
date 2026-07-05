@@ -1617,6 +1617,43 @@ export interface CreateBookingBody {
   note?: string | null;
 }
 
+/**
+ * A booking enriched for the inbox — the underlying reservation plus the listing title/location and the other party's name (the guest in the host view, the host in the guest view).
+ */
+export interface BookingListItem {
+  id: string;
+  listing_id: string;
+  check_in: string;
+  check_out: string;
+  nights: number;
+  guests: number;
+  price_per_night?: number | null;
+  total_price?: number | null;
+  currency: string;
+  status: string;
+  created_at?: string | null;
+  listing_title: string;
+  listing_location?: string | null;
+  counterparty_name?: string | null;
+}
+
+/**
+ * confirm/reject are host-only (on a requested booking); cancel is guest-only (on a requested/confirmed booking).
+ */
+export type UpdateBookingBodyAction = typeof UpdateBookingBodyAction[keyof typeof UpdateBookingBodyAction];
+
+
+export const UpdateBookingBodyAction = {
+  confirm: 'confirm',
+  reject: 'reject',
+  cancel: 'cancel',
+} as const;
+
+export interface UpdateBookingBody {
+  /** confirm/reject are host-only (on a requested booking); cancel is guest-only (on a requested/confirmed booking). */
+  action: UpdateBookingBodyAction;
+}
+
 export type PromoCampaignViewStatus = typeof PromoCampaignViewStatus[keyof typeof PromoCampaignViewStatus];
 
 
@@ -2750,6 +2787,30 @@ export type GetListingAvailability200 = {
 };
 
 export type CreateBooking200 = {
+  data?: Booking;
+  error?: ApiError | null;
+  meta?: Meta;
+};
+
+export type ListBookingsParams = {
+role?: ListBookingsRole;
+};
+
+export type ListBookingsRole = typeof ListBookingsRole[keyof typeof ListBookingsRole];
+
+
+export const ListBookingsRole = {
+  guest: 'guest',
+  host: 'host',
+} as const;
+
+export type ListBookings200 = {
+  data?: BookingListItem[];
+  error?: ApiError | null;
+  meta?: Meta;
+};
+
+export type UpdateBooking200 = {
   data?: Booking;
   error?: ApiError | null;
   meta?: Meta;

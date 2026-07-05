@@ -1,6 +1,7 @@
 import { Router } from "express";
 import feedRouter from "./feed";
 import listingsRouter from "./listings";
+import bookingsRouter from "./bookings";
 import searchRouter from "./search";
 import leadsRouter from "./leads";
 import savesRouter from "./saves";
@@ -32,6 +33,7 @@ const router = Router();
 router.use("/me", meRouter);
 router.use("/feed", feedRouter);
 router.use("/listings", listingsRouter);
+router.use("/bookings", bookingsRouter);
 router.use("/search", searchRouter);
 router.use("/leads", leadsRouter);
 router.use("/saves", savesRouter);
