@@ -4,7 +4,11 @@
     "appVersionSource": "local"
   },
   "build": {
+    "base": {
+      "node": "24.18.0"
+    },
     "development": {
+      "extends": "base",
       "developmentClient": true,
       "distribution": "internal",
       "android": {
@@ -12,6 +16,7 @@
       }
     },
     "preview": {
+      "extends": "base",
       "environment": "production",
       "distribution": "internal",
       "android": {
@@ -19,6 +24,7 @@
       }
     },
     "production": {
+      "extends": "base",
       "environment": "production",
       "android": {
         "buildType": "app-bundle"
