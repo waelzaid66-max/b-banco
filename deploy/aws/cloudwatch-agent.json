@@ -1,0 +1,34 @@
+{
+  "_comment": "CloudWatch agent config for the EC2 host. Container logs already ship via the compose awslogs driver (/banco/api, /banco/web). This adds host-level metrics + the on-disk API log files if LOG_DIR is set.",
+  "agent": {
+    "metrics_collection_interval": 60,
+    "run_as_user": "cwagent"
+  },
+  "metrics": {
+    "namespace": "BANCO/EC2",
+    "append_dimensions": {
+      "InstanceId": "${aws:InstanceId}"
+    },
+    "metrics_collected": {
+      "cpu": { "measurement": ["cpu_usage_active"], "totalcpu": true },
+      "mem": { "measurement": ["mem_used_percent"] },
+      "disk": { "measurement": ["used_percent"], "resources": ["/"] },
+      "diskio": { "measurement": ["io_time"] },
+      "swap": { "measurement": ["swap_used_percent"] }
+    }
+  },
+  "logs": {
+    "logs_collected": {
+      "files": {
+        "collect_list": [
+          {
+            "file_path": "/opt/banco/logs/*.log",
+            "log_group_name": "/banco/api-files",
+            "log_stream_name": "{instance_id}",
+            "retention_in_days": 30
+          }
+        ]
+      }
+    }
+  }
+}

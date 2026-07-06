@@ -1,45 +1,76 @@
-# [Project name]
+# B-OOM — BANCO Opportunity Open Market
 
-_Replace the heading above with the project's name, and this line with one sentence describing what this app does for users._
+Multi-vertical marketplace (Cars · Real Estate incl. rent/booking · Industrial ·
+B2B Supply) for Egypt & the GCC. One Express API + one typed OpenAPI contract +
+four surfaces (mobile, admin, market, landing). See README.md for the product
+overview, STATUS_REPORT.md for verification evidence, threat_model.md for security.
 
-## Run & Operate
+## Run & Operate (Replit / Linux)
 
-- `pnpm --filter @workspace/api-server run dev` — run the API server (port 5000)
-- `pnpm run typecheck` — full typecheck across all packages
-- `pnpm run build` — typecheck + build all packages
-- `pnpm --filter @workspace/api-spec run codegen` — regenerate API hooks and Zod schemas from the OpenAPI spec
-- `pnpm --filter @workspace/db run push` — push DB schema changes (dev only)
-- Required env: `DATABASE_URL` — Postgres connection string
+> The API **requires** `PORT` and `DATABASE_URL` (it throws at boot without
+> `PORT`). On Replit these come from the workspace/secrets — do NOT hardcode a
+> port. There is NO fixed "port 5000".
+
+- **API (dev = build + start):**
+  `PORT=$PORT DATABASE_URL=$DATABASE_URL pnpm --filter @workspace/api-server run dev`
+  (the `dev` script runs `pnpm build` then `node dist/index.mjs`).
+- **One-command boot:** `./turbo.sh` (API) · `./turbo.sh all` (API + admin +
+  market + landing) · `./turbo.sh check` (typecheck + backend tests).
+- **Web surfaces:** `pnpm --filter admin-os run dev` (also dealer-os / landing) —
+  each needs a `PORT` env; Vite configs read `process.env.PORT`.
+- **Typecheck everything:** `pnpm run typecheck` (0 errors across all packages).
+- **Build everything:** `pnpm run build`.
+- **Regenerate API client from the spec:** `pnpm --filter @workspace/api-spec run codegen`
+  (orval → api-client-react + api-zod). Additive-only policy; grep the namespace
+  before adding a schema/operationId.
+- **DB schema (dev):** `pnpm --filter @workspace/db run push` (Drizzle push).
+  Fresh DB also needs `CREATE EXTENSION pg_trgm` + the seeds
+  (`pnpm --filter @workspace/api-server run seed` / `seed:reference` /
+  `seed:car-brands` / `seed:admin`).
+- **Backend tests (real Postgres):** `pnpm --filter @workspace/api-server test`.
 
 ## Stack
 
-- pnpm workspaces, Node.js 24, TypeScript 5.9
-- API: Express 5
-- DB: PostgreSQL + Drizzle ORM
-- Validation: Zod (`zod/v4`), `drizzle-zod`
-- API codegen: Orval (from OpenAPI spec)
-- Build: esbuild (CJS bundle)
+- pnpm workspaces · **Node.js 24** (pnpm 11.9 uses `node:sqlite`) · TypeScript 5.9
+- API: **Express 5**; bundled by esbuild to **ESM** (`dist/index.mjs`, not CJS)
+- DB: PostgreSQL + Drizzle ORM (`lib/db`); requires the `pg_trgm` extension
+- Validation: Zod (`zod/v4`) + drizzle-zod
+- API codegen: Orval from `lib/api-spec/openapi.yaml` (source of truth)
+- Auth: Clerk · Payments: Paymob (HMAC webhooks) · Email: Resend · AI: OpenAI
+- Object storage: presigned uploads (Replit sidecar in dev; **S3 adapter** on AWS
+  via `OBJECT_STORAGE_PROVIDER=s3` — see deploy/aws/)
 
-## Where things live
+## Where things live (source of truth)
 
-_Populate as you build — short repo map plus pointers to the source-of-truth file for DB schema, API contracts, theme files, etc._
+- DB schema → `lib/db/src/schema/index.ts`
+- API contract → `lib/api-spec/openapi.yaml` (→ generated client, never hand-write fetch)
+- Startup/health → `artifacts/api-server/src/index.ts` (binds port BEFORE DB
+  extensions), health routes `artifacts/api-server/src/routes/health.ts`
+  (`/api/healthz` liveness, `/api/readyz` readiness)
+- Scheduled jobs → `artifacts/api-server/src/jobs/` (in-process node-cron +
+  Postgres advisory locks; no external queue)
+- AWS deployment → `deploy/aws/` (Dockerfiles, compose, EB, reports) + root
+  `Dockerfile` (Elastic Beanstalk)
 
-## Architecture decisions
+## Architecture decisions (non-obvious)
 
-_Populate as you build — non-obvious choices a reader couldn't infer from the code (3-5 bullets)._
-
-## Product
-
-_Describe the high-level user-facing capabilities of this app once they exist._
-
-## User preferences
-
-_Populate as you build — explicit user instructions worth remembering across sessions._
+- **Bind the port before ensuring DB extensions** — a past deploy failed because
+  startup awaited a DB extension and the port never opened.
+- **Health ≠ readiness:** liveness never touches the DB; `/api/readyz` returns 503
+  when the DB is down so load balancers drain the instance.
+- **Adaptive data:** never block a valid trade; save all specs; publish-then-learn.
+- **One search/filter pipeline** shared by list, map, and facets.
+- **i18n parity** compile-enforced (`ar: typeof en`) — a missing key fails typecheck.
 
 ## Gotchas
 
-_Populate as you build — sharp edges, "always run X before Y" rules._
+- Always `PORT` + `DATABASE_URL` before running the API.
+- After editing `openapi.yaml`, run codegen; grep the namespace first (a dup name
+  once wiped generated files).
+- Backend tests pin `TZ=UTC` (matches CI/prod; fixes an off-UTC timestamp flake).
+- Icons are SVG (lucide) — never `@expo/vector-icons` fonts (Android tofu). Run
+  `node --test tests/icons.test.mjs` after icon changes.
 
 ## Pointers
 
-- See the `pnpm-workspace` skill for workspace structure, TypeScript setup, and package details
+- Deploy: `deploy/aws/reports/00-README.md` (AWS) · `release/STORE_PUBLISHING_GUIDE.md` (app stores/EAS).

@@ -1,0 +1,109 @@
+# BANCO — production compose for a single EC2 host (lowest-cost topology).
+#
+#   API (Node)  +  Web/Nginx (static + reverse proxy)
+#   Postgres    → use AWS RDS in real production (managed backups/PITR).
+#                 The `postgres` service below is OPTIONAL, for a self-contained
+#                 cheapest-possible box or for staging — comment it out and point
+#                 DATABASE_URL at RDS for production.
+#
+# Secrets are injected from an env file that is NEVER committed (see
+# deploy/aws/env/*.example). On EC2, render it from SSM Parameter Store at boot.
+#
+#   docker compose -f deploy/aws/docker-compose.prod.yml --env-file .env.production up -d --build
+
+name: banco
+
+services:
+  api:
+    build:
+      context: ../..
+      dockerfile: deploy/aws/Dockerfile.api
+    image: banco-api:latest
+    restart: always
+    environment:
+      PORT: "8080"
+      NODE_ENV: production
+      DATABASE_URL: ${DATABASE_URL:?set DATABASE_URL}
+      CLERK_SECRET_KEY: ${CLERK_SECRET_KEY:?set CLERK_SECRET_KEY}
+      CLERK_PUBLISHABLE_KEY: ${CLERK_PUBLISHABLE_KEY:-}
+      CORS_ALLOWED_ORIGINS: ${CORS_ALLOWED_ORIGINS:-}
+      PUBLIC_API_BASE_URL: ${PUBLIC_API_BASE_URL:-}
+      PUBLIC_APP_URL: ${PUBLIC_APP_URL:-}
+      ADMIN_EMAILS: ${ADMIN_EMAILS:-}
+      SESSION_SECRET: ${SESSION_SECRET:?set SESSION_SECRET}
+      PAYMENT_CONFIG_ENCRYPTION_KEY: ${PAYMENT_CONFIG_ENCRYPTION_KEY:?set PAYMENT_CONFIG_ENCRYPTION_KEY}
+      # Object storage (S3 — see reports/06 & the REQUIRED-CHANGE note).
+      OBJECT_STORAGE_PROVIDER: ${OBJECT_STORAGE_PROVIDER:-}
+      AWS_REGION: ${AWS_REGION:-}
+      S3_BUCKET: ${S3_BUCKET:-}
+      PUBLIC_OBJECT_SEARCH_PATHS: ${PUBLIC_OBJECT_SEARCH_PATHS:-}
+      PRIVATE_OBJECT_DIR: ${PRIVATE_OBJECT_DIR:-}
+      # Integrations (optional per feature).
+      OPENAI_API_KEY: ${OPENAI_API_KEY:-}
+      OPENAI_MODEL: ${OPENAI_MODEL:-}
+      RESEND_API_KEY: ${RESEND_API_KEY:-}
+      EMAIL_FROM: ${EMAIL_FROM:-}
+      PAYMOB_MODE: ${PAYMOB_MODE:-test}
+      PAYMOB_API_BASE: ${PAYMOB_API_BASE:-}
+      PAYMOB_PUBLIC_KEY: ${PAYMOB_PUBLIC_KEY:-}
+      PAYMOB_SECRET_KEY: ${PAYMOB_SECRET_KEY:-}
+      PAYMOB_HMAC_SECRET: ${PAYMOB_HMAC_SECRET:-}
+      PAYMOB_INTEGRATION_IDS: ${PAYMOB_INTEGRATION_IDS:-}
+      ERROR_ALERT_WEBHOOK: ${ERROR_ALERT_WEBHOOK:-}
+      LOG_LEVEL: ${LOG_LEVEL:-info}
+      LOG_DIR: ${LOG_DIR:-}
+      CRON_TIMEZONE: ${CRON_TIMEZONE:-Africa/Cairo}
+    expose:
+      - "8080"
+    logging:
+      driver: awslogs
+      options:
+        awslogs-group: /banco/api
+        awslogs-region: ${AWS_REGION:-eu-central-1}
+        awslogs-stream-prefix: api
+        # Falls back to json-file locally if the awslogs driver is unavailable;
+        # replace with `json-file` for non-AWS hosts.
+
+  web:
+    build:
+      context: ../..
+      dockerfile: deploy/aws/Dockerfile.web
+      args:
+        VITE_CLERK_PUBLISHABLE_KEY: ${VITE_CLERK_PUBLISHABLE_KEY:-}
+        VITE_API_BASE_URL: ${VITE_API_BASE_URL:-}
+        VITE_MARKET_URL: ${VITE_MARKET_URL:-}
+        VITE_ADMIN_URL: ${VITE_ADMIN_URL:-}
+        VITE_APP_ANDROID_URL: ${VITE_APP_ANDROID_URL:-}
+        VITE_APP_IOS_URL: ${VITE_APP_IOS_URL:-}
+    image: banco-web:latest
+    restart: always
+    depends_on:
+      - api
+    ports:
+      - "80:80"
+    logging:
+      driver: awslogs
+      options:
+        awslogs-group: /banco/web
+        awslogs-region: ${AWS_REGION:-eu-central-1}
+        awslogs-stream-prefix: web
+
+  # OPTIONAL local/staging Postgres. Production should use AWS RDS instead.
+  postgres:
+    image: postgres:16
+    profiles: ["with-db"]
+    restart: always
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-postgres}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-postgres}
+      POSTGRES_DB: ${POSTGRES_DB:-banco}
+    volumes:
+      - banco_pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-postgres}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+volumes:
+  banco_pgdata:

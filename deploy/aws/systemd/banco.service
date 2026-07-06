@@ -1,0 +1,23 @@
+# BANCO — run the production compose stack as a systemd service on EC2 so it
+# starts on boot and restarts on failure. Install:
+#   sudo cp deploy/aws/systemd/banco.service /etc/systemd/system/banco.service
+#   sudo systemctl daemon-reload && sudo systemctl enable --now banco
+[Unit]
+Description=BANCO production stack (docker compose)
+Requires=docker.service
+After=docker.service network-online.target
+Wants=network-online.target
+
+[Service]
+Type=oneshot
+RemainAfterExit=yes
+WorkingDirectory=/opt/banco/aws-virgen
+Environment=AWS_REGION=eu-central-1
+Environment=SSM_PREFIX=/banco/prod
+# deploy.sh renders secrets from SSM, migrates, and brings the stack up healthy.
+ExecStart=/usr/bin/env bash deploy/aws/scripts/deploy.sh
+ExecStop=/usr/bin/docker compose -f deploy/aws/docker-compose.prod.yml --env-file .env.production down
+TimeoutStartSec=900
+
+[Install]
+WantedBy=multi-user.target

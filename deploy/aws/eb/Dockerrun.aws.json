@@ -1,0 +1,23 @@
+{
+  "_comment": [
+    "RECOMMENDED PRODUCTION PATH for Elastic Beanstalk: deploy a PREBUILT image",
+    "from ECR instead of building on the instance. This file is a TEMPLATE and is",
+    "intentionally NOT at the repo root (a root Dockerrun.aws.json would override",
+    "the root Dockerfile). To use it: build + push the API image in CI (see",
+    ".github/workflows/deploy.yml), then create an EB bundle whose ROOT is a copy",
+    "of THIS file with <ACCOUNT> / <REGION> / <TAG> filled in, plus .ebextensions/.",
+    "Replace the on-instance-build root Dockerfile approach with this once ECR is set up."
+  ],
+  "AWSEBDockerrunVersion": "1",
+  "Image": {
+    "Name": "<ACCOUNT>.dkr.ecr.<REGION>.amazonaws.com/banco-api:<TAG>",
+    "Update": "true"
+  },
+  "Ports": [
+    {
+      "ContainerPort": 8080,
+      "HostPort": 80
+    }
+  ],
+  "Logging": "/app/logs"
+}

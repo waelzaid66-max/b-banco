@@ -1,0 +1,25 @@
+# Keep the Docker build context small + never ship secrets or local junk.
+**/node_modules
+**/dist
+**/.expo
+**/.turbo
+**/coverage
+**/.vscode
+**/.idea
+.git
+.github
+**/*.log
+**/.env
+**/.env.*
+!**/.env.*.example
+# NOTE: banco-mobile is intentionally KEPT in the build context — `pnpm install
+# --frozen-lockfile` validates every workspace member's package.json against the
+# lockfile, so omitting it aborts the install. Its node_modules are still
+# excluded (**/node_modules above); the filtered install never pulls its deps and
+# the runner image never copies its source.
+# Local DB dumps / attached assets (never in an image).
+database_backup.dump
+database_backup.dump.gz
+attached_assets
+# Deployment docs don't belong inside the runtime image.
+deploy/aws/reports
