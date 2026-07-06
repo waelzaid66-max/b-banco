@@ -110,6 +110,9 @@ export function SearchResultsMap({
         const priceById = new Map(
           itemsRef.current.map((i) => [i.id, i.price_display]),
         );
+        const bookableById = new Set(
+          itemsRef.current.filter((i) => i.is_bookable === true).map((i) => i.id),
+        );
         const enriched: MapClusterMarker[] = clusters.map((c) => ({
           lat: c.lat,
           lng: c.lng,
@@ -117,6 +120,8 @@ export function SearchResultsMap({
           listing_id: c.listing_id,
           label:
             c.count === 1 && c.listing_id ? priceById.get(c.listing_id) : undefined,
+          bookable:
+            c.count === 1 && c.listing_id ? bookableById.has(c.listing_id) : false,
         }));
         setServerTotal(clusters.reduce((sum, c) => sum + c.count, 0));
         webRef.current?.injectJavaScript(

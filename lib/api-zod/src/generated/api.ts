@@ -174,7 +174,8 @@ export const GetFeedResponse = zod.object({
   "is_active": zod.boolean().nullish().describe('True when the listing status is \"active\" (publicly visible and promotable). Lets owner-facing surfaces built on FeedItem (e.g. the profile grid) gate the Promote control without fetching ListingDetail. Null when status is unknown.'),
   "whatsapp_enabled": zod.boolean().nullish().describe('True when the seller opted this listing in to WhatsApp contact. Opt-in only (default false). Lets surfaces decide whether to surface a WhatsApp action. Null when unknown.'),
   "created_at": zod.string().nullish().describe('Listing creation timestamp (ISO 8601). Owner-facing grids (profile, \"my listings\") render a \"Listed <date>\" caption. Null only when the source row lacks it; public feeds always carry it.'),
-  "is_request": zod.boolean().nullish().describe('True when this is a buyer \"request\/wanted\" post (looking to buy) rather than a sale listing. Surfaces render a \"طلب \/ Wanted\" badge and the requests filter keys off it. Null when unknown.')
+  "is_request": zod.boolean().nullish().describe('True when this is a buyer \"request\/wanted\" post (looking to buy) rather than a sale listing. Surfaces render a \"طلب \/ Wanted\" badge and the requests filter keys off it. Null when unknown.'),
+  "is_bookable": zod.boolean().nullish().describe('Additive. True when this listing is a furnished\/daily rental (hotel model) that can be reserved from its detail. Lets the feed, search card, and map pin surface a \"قابل للحجز \/ Bookable\" affordance without fetching the detail. Null\/false for everything else.')
 }).describe('Immutable v1 contract — exactly 11 fields. No renames, no removals allowed in v1. Breaking changes go to \/v2\/\*.\n')).optional(),
   "error": zod.object({
   "code": zod.enum(['INVALID_DATA', 'NOT_FOUND', 'UNAUTHORIZED', 'INTERNAL_ERROR', 'FORBIDDEN', 'RATE_LIMITED']),
@@ -300,7 +301,8 @@ export const GetListingsResponse = zod.object({
   "is_active": zod.boolean().nullish().describe('True when the listing status is \"active\" (publicly visible and promotable). Lets owner-facing surfaces built on FeedItem (e.g. the profile grid) gate the Promote control without fetching ListingDetail. Null when status is unknown.'),
   "whatsapp_enabled": zod.boolean().nullish().describe('True when the seller opted this listing in to WhatsApp contact. Opt-in only (default false). Lets surfaces decide whether to surface a WhatsApp action. Null when unknown.'),
   "created_at": zod.string().nullish().describe('Listing creation timestamp (ISO 8601). Owner-facing grids (profile, \"my listings\") render a \"Listed <date>\" caption. Null only when the source row lacks it; public feeds always carry it.'),
-  "is_request": zod.boolean().nullish().describe('True when this is a buyer \"request\/wanted\" post (looking to buy) rather than a sale listing. Surfaces render a \"طلب \/ Wanted\" badge and the requests filter keys off it. Null when unknown.')
+  "is_request": zod.boolean().nullish().describe('True when this is a buyer \"request\/wanted\" post (looking to buy) rather than a sale listing. Surfaces render a \"طلب \/ Wanted\" badge and the requests filter keys off it. Null when unknown.'),
+  "is_bookable": zod.boolean().nullish().describe('Additive. True when this listing is a furnished\/daily rental (hotel model) that can be reserved from its detail. Lets the feed, search card, and map pin surface a \"قابل للحجز \/ Bookable\" affordance without fetching the detail. Null\/false for everything else.')
 }).describe('Immutable v1 contract — exactly 11 fields. No renames, no removals allowed in v1. Breaking changes go to \/v2\/\*.\n')).optional(),
   "error": zod.object({
   "code": zod.enum(['INVALID_DATA', 'NOT_FOUND', 'UNAUTHORIZED', 'INTERNAL_ERROR', 'FORBIDDEN', 'RATE_LIMITED']),
@@ -571,7 +573,8 @@ export const GetSimilarListingsResponse = zod.object({
   "is_active": zod.boolean().nullish().describe('True when the listing status is \"active\" (publicly visible and promotable). Lets owner-facing surfaces built on FeedItem (e.g. the profile grid) gate the Promote control without fetching ListingDetail. Null when status is unknown.'),
   "whatsapp_enabled": zod.boolean().nullish().describe('True when the seller opted this listing in to WhatsApp contact. Opt-in only (default false). Lets surfaces decide whether to surface a WhatsApp action. Null when unknown.'),
   "created_at": zod.string().nullish().describe('Listing creation timestamp (ISO 8601). Owner-facing grids (profile, \"my listings\") render a \"Listed <date>\" caption. Null only when the source row lacks it; public feeds always carry it.'),
-  "is_request": zod.boolean().nullish().describe('True when this is a buyer \"request\/wanted\" post (looking to buy) rather than a sale listing. Surfaces render a \"طلب \/ Wanted\" badge and the requests filter keys off it. Null when unknown.')
+  "is_request": zod.boolean().nullish().describe('True when this is a buyer \"request\/wanted\" post (looking to buy) rather than a sale listing. Surfaces render a \"طلب \/ Wanted\" badge and the requests filter keys off it. Null when unknown.'),
+  "is_bookable": zod.boolean().nullish().describe('Additive. True when this listing is a furnished\/daily rental (hotel model) that can be reserved from its detail. Lets the feed, search card, and map pin surface a \"قابل للحجز \/ Bookable\" affordance without fetching the detail. Null\/false for everything else.')
 }).describe('Immutable v1 contract — exactly 11 fields. No renames, no removals allowed in v1. Breaking changes go to \/v2\/\*.\n')).optional(),
   "error": zod.object({
   "code": zod.enum(['INVALID_DATA', 'NOT_FOUND', 'UNAUTHORIZED', 'INTERNAL_ERROR', 'FORBIDDEN', 'RATE_LIMITED']),
@@ -854,7 +857,8 @@ export const SearchListingsResponse = zod.object({
   "is_active": zod.boolean().nullish().describe('True when the listing status is \"active\" (publicly visible and promotable). Lets owner-facing surfaces built on FeedItem (e.g. the profile grid) gate the Promote control without fetching ListingDetail. Null when status is unknown.'),
   "whatsapp_enabled": zod.boolean().nullish().describe('True when the seller opted this listing in to WhatsApp contact. Opt-in only (default false). Lets surfaces decide whether to surface a WhatsApp action. Null when unknown.'),
   "created_at": zod.string().nullish().describe('Listing creation timestamp (ISO 8601). Owner-facing grids (profile, \"my listings\") render a \"Listed <date>\" caption. Null only when the source row lacks it; public feeds always carry it.'),
-  "is_request": zod.boolean().nullish().describe('True when this is a buyer \"request\/wanted\" post (looking to buy) rather than a sale listing. Surfaces render a \"طلب \/ Wanted\" badge and the requests filter keys off it. Null when unknown.')
+  "is_request": zod.boolean().nullish().describe('True when this is a buyer \"request\/wanted\" post (looking to buy) rather than a sale listing. Surfaces render a \"طلب \/ Wanted\" badge and the requests filter keys off it. Null when unknown.'),
+  "is_bookable": zod.boolean().nullish().describe('Additive. True when this listing is a furnished\/daily rental (hotel model) that can be reserved from its detail. Lets the feed, search card, and map pin surface a \"قابل للحجز \/ Bookable\" affordance without fetching the detail. Null\/false for everything else.')
 }).describe('Immutable v1 contract — exactly 11 fields. No renames, no removals allowed in v1. Breaking changes go to \/v2\/\*.\n')).optional(),
   "error": zod.object({
   "code": zod.enum(['INVALID_DATA', 'NOT_FOUND', 'UNAUTHORIZED', 'INTERNAL_ERROR', 'FORBIDDEN', 'RATE_LIMITED']),
@@ -1008,7 +1012,8 @@ export const GetTrendingResponse = zod.object({
   "is_active": zod.boolean().nullish().describe('True when the listing status is \"active\" (publicly visible and promotable). Lets owner-facing surfaces built on FeedItem (e.g. the profile grid) gate the Promote control without fetching ListingDetail. Null when status is unknown.'),
   "whatsapp_enabled": zod.boolean().nullish().describe('True when the seller opted this listing in to WhatsApp contact. Opt-in only (default false). Lets surfaces decide whether to surface a WhatsApp action. Null when unknown.'),
   "created_at": zod.string().nullish().describe('Listing creation timestamp (ISO 8601). Owner-facing grids (profile, \"my listings\") render a \"Listed <date>\" caption. Null only when the source row lacks it; public feeds always carry it.'),
-  "is_request": zod.boolean().nullish().describe('True when this is a buyer \"request\/wanted\" post (looking to buy) rather than a sale listing. Surfaces render a \"طلب \/ Wanted\" badge and the requests filter keys off it. Null when unknown.')
+  "is_request": zod.boolean().nullish().describe('True when this is a buyer \"request\/wanted\" post (looking to buy) rather than a sale listing. Surfaces render a \"طلب \/ Wanted\" badge and the requests filter keys off it. Null when unknown.'),
+  "is_bookable": zod.boolean().nullish().describe('Additive. True when this listing is a furnished\/daily rental (hotel model) that can be reserved from its detail. Lets the feed, search card, and map pin surface a \"قابل للحجز \/ Bookable\" affordance without fetching the detail. Null\/false for everything else.')
 }).describe('Immutable v1 contract — exactly 11 fields. No renames, no removals allowed in v1. Breaking changes go to \/v2\/\*.\n')).optional(),
   "error": zod.object({
   "code": zod.enum(['INVALID_DATA', 'NOT_FOUND', 'UNAUTHORIZED', 'INTERNAL_ERROR', 'FORBIDDEN', 'RATE_LIMITED']),
@@ -1048,7 +1053,8 @@ export const GetRecommendationsResponse = zod.object({
   "is_active": zod.boolean().nullish().describe('True when the listing status is \"active\" (publicly visible and promotable). Lets owner-facing surfaces built on FeedItem (e.g. the profile grid) gate the Promote control without fetching ListingDetail. Null when status is unknown.'),
   "whatsapp_enabled": zod.boolean().nullish().describe('True when the seller opted this listing in to WhatsApp contact. Opt-in only (default false). Lets surfaces decide whether to surface a WhatsApp action. Null when unknown.'),
   "created_at": zod.string().nullish().describe('Listing creation timestamp (ISO 8601). Owner-facing grids (profile, \"my listings\") render a \"Listed <date>\" caption. Null only when the source row lacks it; public feeds always carry it.'),
-  "is_request": zod.boolean().nullish().describe('True when this is a buyer \"request\/wanted\" post (looking to buy) rather than a sale listing. Surfaces render a \"طلب \/ Wanted\" badge and the requests filter keys off it. Null when unknown.')
+  "is_request": zod.boolean().nullish().describe('True when this is a buyer \"request\/wanted\" post (looking to buy) rather than a sale listing. Surfaces render a \"طلب \/ Wanted\" badge and the requests filter keys off it. Null when unknown.'),
+  "is_bookable": zod.boolean().nullish().describe('Additive. True when this listing is a furnished\/daily rental (hotel model) that can be reserved from its detail. Lets the feed, search card, and map pin surface a \"قابل للحجز \/ Bookable\" affordance without fetching the detail. Null\/false for everything else.')
 }).describe('Immutable v1 contract — exactly 11 fields. No renames, no removals allowed in v1. Breaking changes go to \/v2\/\*.\n')).optional(),
   "error": zod.object({
   "code": zod.enum(['INVALID_DATA', 'NOT_FOUND', 'UNAUTHORIZED', 'INTERNAL_ERROR', 'FORBIDDEN', 'RATE_LIMITED']),
@@ -1540,7 +1546,8 @@ export const GetMyListingsResponse = zod.object({
   "is_active": zod.boolean().nullish().describe('True when the listing status is \"active\" (publicly visible and promotable). Lets owner-facing surfaces built on FeedItem (e.g. the profile grid) gate the Promote control without fetching ListingDetail. Null when status is unknown.'),
   "whatsapp_enabled": zod.boolean().nullish().describe('True when the seller opted this listing in to WhatsApp contact. Opt-in only (default false). Lets surfaces decide whether to surface a WhatsApp action. Null when unknown.'),
   "created_at": zod.string().nullish().describe('Listing creation timestamp (ISO 8601). Owner-facing grids (profile, \"my listings\") render a \"Listed <date>\" caption. Null only when the source row lacks it; public feeds always carry it.'),
-  "is_request": zod.boolean().nullish().describe('True when this is a buyer \"request\/wanted\" post (looking to buy) rather than a sale listing. Surfaces render a \"طلب \/ Wanted\" badge and the requests filter keys off it. Null when unknown.')
+  "is_request": zod.boolean().nullish().describe('True when this is a buyer \"request\/wanted\" post (looking to buy) rather than a sale listing. Surfaces render a \"طلب \/ Wanted\" badge and the requests filter keys off it. Null when unknown.'),
+  "is_bookable": zod.boolean().nullish().describe('Additive. True when this listing is a furnished\/daily rental (hotel model) that can be reserved from its detail. Lets the feed, search card, and map pin surface a \"قابل للحجز \/ Bookable\" affordance without fetching the detail. Null\/false for everything else.')
 }).describe('Immutable v1 contract — exactly 11 fields. No renames, no removals allowed in v1. Breaking changes go to \/v2\/\*.\n')),
   "error": zod.object({
   "code": zod.enum(['INVALID_DATA', 'NOT_FOUND', 'UNAUTHORIZED', 'INTERNAL_ERROR', 'FORBIDDEN', 'RATE_LIMITED']),
@@ -4357,7 +4364,8 @@ export const GetCompanyListingsResponse = zod.object({
   "is_active": zod.boolean().nullish().describe('True when the listing status is \"active\" (publicly visible and promotable). Lets owner-facing surfaces built on FeedItem (e.g. the profile grid) gate the Promote control without fetching ListingDetail. Null when status is unknown.'),
   "whatsapp_enabled": zod.boolean().nullish().describe('True when the seller opted this listing in to WhatsApp contact. Opt-in only (default false). Lets surfaces decide whether to surface a WhatsApp action. Null when unknown.'),
   "created_at": zod.string().nullish().describe('Listing creation timestamp (ISO 8601). Owner-facing grids (profile, \"my listings\") render a \"Listed <date>\" caption. Null only when the source row lacks it; public feeds always carry it.'),
-  "is_request": zod.boolean().nullish().describe('True when this is a buyer \"request\/wanted\" post (looking to buy) rather than a sale listing. Surfaces render a \"طلب \/ Wanted\" badge and the requests filter keys off it. Null when unknown.')
+  "is_request": zod.boolean().nullish().describe('True when this is a buyer \"request\/wanted\" post (looking to buy) rather than a sale listing. Surfaces render a \"طلب \/ Wanted\" badge and the requests filter keys off it. Null when unknown.'),
+  "is_bookable": zod.boolean().nullish().describe('Additive. True when this listing is a furnished\/daily rental (hotel model) that can be reserved from its detail. Lets the feed, search card, and map pin surface a \"قابل للحجز \/ Bookable\" affordance without fetching the detail. Null\/false for everything else.')
 }).describe('Immutable v1 contract — exactly 11 fields. No renames, no removals allowed in v1. Breaking changes go to \/v2\/\*.\n')).optional(),
   "error": zod.object({
   "code": zod.enum(['INVALID_DATA', 'NOT_FOUND', 'UNAUTHORIZED', 'INTERNAL_ERROR', 'FORBIDDEN', 'RATE_LIMITED']),

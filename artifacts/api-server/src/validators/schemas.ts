@@ -237,6 +237,9 @@ export const FeedItemSchema = z
     // listing. Surfaces render a "طلب / Wanted" badge and the requests filter
     // keys off it. Null only when the source row lacks the flag.
     is_request: z.boolean().nullable(),
+    // Additive: furnished/daily rental that can be reserved (hotel model) →
+    // drives the "قابل للحجز / Bookable" badge on cards + map pins.
+    is_bookable: z.boolean().nullable().optional(),
   })
   .strict();
 

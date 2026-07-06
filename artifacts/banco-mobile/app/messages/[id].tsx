@@ -11,6 +11,7 @@ import {
   type Message,
 } from "@workspace/api-client-react";
 import { useQueryClient } from "@tanstack/react-query";
+import * as Clipboard from "expo-clipboard";
 import * as Haptics from "expo-haptics";
 import { Image } from "expo-image";
 import * as ImagePicker from "expo-image-picker";
@@ -968,6 +969,24 @@ export default function ThreadScreen() {
                 {t("chat.reply")}
               </AppText>
             </Pressable>
+            {/* Copy — only when there is text to copy (image-only messages skip it). */}
+            {actionFor?.body?.trim() ? (
+              <Pressable
+                onPress={() => {
+                  const text = actionFor.body ?? "";
+                  setActionFor(null);
+                  Haptics.selectionAsync();
+                  void Clipboard.setStringAsync(text);
+                }}
+                style={[styles.sheetAction, { flexDirection: isRTL ? "row-reverse" : "row" }]}
+                testID="action-copy"
+              >
+                <Feather name="copy" size={18} color={colors.foreground} />
+                <AppText style={[styles.sheetActionText, { color: colors.foreground }]}>
+                  {t("chat.copy")}
+                </AppText>
+              </Pressable>
+            ) : null}
           </View>
         </Pressable>
       </Modal>

@@ -175,6 +175,8 @@ export interface FeedItem {
   created_at?: string | null;
   /** True when this is a buyer "request/wanted" post (looking to buy) rather than a sale listing. Surfaces render a "طلب / Wanted" badge and the requests filter keys off it. Null when unknown. */
   is_request?: boolean | null;
+  /** Additive. True when this listing is a furnished/daily rental (hotel model) that can be reserved from its detail. Lets the feed, search card, and map pin surface a "قابل للحجز / Bookable" affordance without fetching the detail. Null/false for everything else. */
+  is_bookable?: boolean | null;
 }
 
 export type OfferFinancingType = typeof OfferFinancingType[keyof typeof OfferFinancingType];

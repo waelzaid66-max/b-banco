@@ -251,6 +251,14 @@ components:
           type: boolean
           nullable: true
           description: True when this is a buyer "request/wanted" post (looking to buy) rather than a sale listing. Surfaces render a "طلب / Wanted" badge and the requests filter keys off it. Null when unknown.
+        is_bookable:
+          type: boolean
+          nullable: true
+          description: >-
+            Additive. True when this listing is a furnished/daily rental (hotel
+            model) that can be reserved from its detail. Lets the feed, search
+            card, and map pin surface a "قابل للحجز / Bookable" affordance without
+            fetching the detail. Null/false for everything else.
 
     Coordinates:
       type: object

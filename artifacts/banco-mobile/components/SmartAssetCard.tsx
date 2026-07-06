@@ -171,6 +171,13 @@ function SmartAssetCardComponent({
                   <Text style={styles.urgencyText}>{item.urgency_signal}</Text>
                 </View>
               ) : null}
+              {/* Bookable (furnished/daily rental) — icon-only so it needs no
+                  translation and matches the 📅 map pin. */}
+              {item.is_bookable ? (
+                <View style={[styles.bookableBadge, { backgroundColor: colors.primary }]}>
+                  <Ionicons name="calendar" size={12} color="#FFFFFF" />
+                </View>
+              ) : null}
             </View>
 
             {item.has_video && (
@@ -349,6 +356,13 @@ const styles = StyleSheet.create({
     paddingHorizontal: 8,
     paddingVertical: 3,
     borderRadius: 4,
+  },
+  bookableBadge: {
+    width: 22,
+    height: 22,
+    borderRadius: 4,
+    alignItems: "center",
+    justifyContent: "center",
   },
   urgencyText: {
     color: "#FFFFFF",

@@ -130,6 +130,10 @@ export function transformToFeedItem(row: RawListingRow): FeedItem | null {
         : (row.created_at ?? null),
     // Buyer request/wanted flag for the "طلب / Wanted" badge; null when unknown.
     is_request: row.is_request ?? null,
+    // Additive: bookable when it's a furnished/daily real-estate rental (hotel
+    // model) — surfaces the "قابل للحجز / Bookable" badge on cards + map pins.
+    is_bookable:
+      row.category === "real_estate" && row.rental_term === "furnished_daily",
   };
 }
 

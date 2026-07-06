@@ -7,6 +7,8 @@ export interface MapMarker {
   lng: number;
   /** Pre-formatted, already-localized price (FeedItem.price_display). */
   label: string;
+  /** Furnished/daily rental → the pin gets a 📅 "bookable" prefix. */
+  bookable?: boolean;
 }
 
 /**
@@ -21,6 +23,8 @@ export interface MapClusterMarker {
   count: number;
   listing_id: string | null;
   label?: string;
+  /** Single-listing furnished/daily rental → 📅 "bookable" prefix on the pin. */
+  bookable?: boolean;
 }
 
 /** Brand colors threaded into the Leaflet page so pins match the app theme. */
@@ -60,7 +64,13 @@ export function feedItemsToMarkers(items: FeedItem[]): MapMarker[] {
   for (const item of items) {
     const c = item.coordinates;
     if (c && Number.isFinite(c.lat) && Number.isFinite(c.lng)) {
-      out.push({ id: item.id, lat: c.lat, lng: c.lng, label: item.price_display });
+      out.push({
+        id: item.id,
+        lat: c.lat,
+        lng: c.lng,
+        label: item.price_display,
+        bookable: item.is_bookable === true,
+      });
     }
   }
   return out;
@@ -199,7 +209,7 @@ export function buildMapHtml(markers: MapMarker[], theme: MapTheme): string {
       if (typeof d.lat !== "number" || typeof d.lng !== "number") return;
       var icon = L.divIcon({
         className: "pin",
-        html: '<div class="pill">' + esc(d.label) + "</div>",
+        html: '<div class="pill">' + (d.bookable ? "📅 " : "") + esc(d.label) + "</div>",
         iconSize: [0, 0]
       });
       var m = L.marker([d.lat, d.lng], { icon: icon });
@@ -239,7 +249,7 @@ export function buildMapHtml(markers: MapMarker[], theme: MapTheme): string {
             })(c.lat, c.lng);
           } else {
             var inner = c.label
-              ? '<div class="pill">' + esc(c.label) + "</div>"
+              ? '<div class="pill">' + (c.bookable ? "📅 " : "") + esc(c.label) + "</div>"
               : '<div class="sdot"></div>';
             marker = L.marker([c.lat, c.lng], {
               icon: L.divIcon({
