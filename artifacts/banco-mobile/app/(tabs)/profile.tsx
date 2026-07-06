@@ -787,6 +787,16 @@ export default function ProfileScreen() {
     const isUnderReview = isBusiness && !isVerified;
     const responseRate =
       typeof metrics?.response_rate === "number" ? metrics.response_rate : null;
+
+    // Profile-completion nudge (own profile only): the three signals that make a
+    // seller trustworthy + reachable. Each missing item is a one-tap fix. The
+    // whole block vanishes once complete — no nagging.
+    const completionItems = [
+      { key: "photo", done: !!user.hasImage, onPress: () => setShowPhotoRationale(true) },
+      { key: "bio", done: !!bio, onPress: openEditProfile },
+      { key: "phone", done: !!meQuery.data?.data?.phone?.trim(), onPress: openEditProfile },
+    ];
+    const completionMissing = completionItems.filter((i) => !i.done);
     const statNum = (n: number | undefined) =>
       typeof n === "number"
         ? n.toLocaleString(lang === "ar" ? "ar-EG" : "en-US")
@@ -1190,6 +1200,49 @@ export default function ProfileScreen() {
             ) : null}
           </View>
         </View>
+
+        {/* Complete-your-profile nudge — one-tap fixes; hidden once complete. */}
+        {completionMissing.length > 0 ? (
+          <View
+            style={[
+              styles.completeCard,
+              { backgroundColor: colors.secondary, borderColor: colors.border },
+            ]}
+            testID="profile-completion"
+          >
+            <View style={[styles.completeHeader, isRTL && styles.rowReverse]}>
+              <Feather name="user" size={15} color={colors.primary} />
+              <AppText style={[styles.completeTitle, { color: colors.foreground }]}>
+                {t("profile.completeTitle")}
+              </AppText>
+              <AppText style={[styles.completeCount, { color: colors.mutedForeground }]}>
+                {completionItems.length - completionMissing.length}/{completionItems.length}
+              </AppText>
+            </View>
+            <View style={[styles.completeChips, isRTL && styles.rowReverse]}>
+              {completionMissing.map((m) => (
+                <Pressable
+                  key={m.key}
+                  onPress={() => {
+                    Haptics.selectionAsync();
+                    m.onPress();
+                  }}
+                  style={[
+                    styles.completeChip,
+                    { backgroundColor: colors.background, borderColor: colors.border },
+                    isRTL && styles.rowReverse,
+                  ]}
+                  testID={`complete-${m.key}`}
+                >
+                  <Feather name="plus" size={12} color={colors.primary} />
+                  <AppText style={[styles.completeChipText, { color: colors.foreground }]}>
+                    {t(`profile.complete_${m.key}`)}
+                  </AppText>
+                </Pressable>
+              ))}
+            </View>
+          </View>
+        ) : null}
 
         {/* REAL metric tiles */}
         <View
@@ -3483,6 +3536,27 @@ const styles = StyleSheet.create({
     borderTopWidth: 1,
     borderBottomWidth: 1,
   },
+  completeCard: {
+    marginTop: 14,
+    borderWidth: StyleSheet.hairlineWidth,
+    borderRadius: 14,
+    padding: 12,
+    gap: 10,
+  },
+  completeHeader: { flexDirection: "row", alignItems: "center", gap: 7 },
+  completeTitle: { flex: 1, fontSize: 13.5, fontWeight: "700" },
+  completeCount: { fontSize: 12, fontWeight: "700" },
+  completeChips: { flexDirection: "row", flexWrap: "wrap", gap: 8 },
+  completeChip: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 5,
+    paddingHorizontal: 11,
+    paddingVertical: 7,
+    borderRadius: 999,
+    borderWidth: StyleSheet.hairlineWidth,
+  },
+  completeChipText: { fontSize: 12.5, fontWeight: "600" },
 
   // Grid card
   postCard: {
