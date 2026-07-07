@@ -1,6 +1,6 @@
 # BANCO Store — Completion & Status Report
 
-_Last updated: 2026-07-08 — P1 property_type engines + health smoke tests._
+_Last updated: 2026-07-08 — P0/P2 plan close-out (staging scripts, GCP scaffold, ESLint, resilience tests)._
 
 > **Release line:** `main` — verified locally: **typecheck 0 errors (mobile + api-client)**, **API PDF/CSV unit tests passed**, **13 mobile regression tests passed** (`test:lib` + `test:icons`).
 
@@ -11,7 +11,7 @@ This is the live status of the BANCO Store monorepo (Banco Mobile · Banco Admin
 ## 1. How verification works here
 
 - **Backend (api-server):** real integration tests on a real PostgreSQL — `pnpm --filter @workspace/api-server test`. Current state: **289 passed / 3 skipped / 0 failing** (includes `ensureSchema` P0 guard).
-- **Mobile regression:** `test:icons` + `test:lib` → **14 passed** (icon registry + finance/routing/engine guards).
+- **Mobile regression:** `test:icons` + `test:lib` + `test:resilience` → **19 passed** (icons + finance/routing/engines + crash/offline guards).
 - **Type safety (all surfaces):** `pnpm -r --if-present run typecheck` → **0 errors across 7 packages** (api-server, banco-mobile, admin-os, dealer-os, landing, mockup-sandbox, scripts).
 - **API contract:** `lib/api-spec/openapi.yaml` is the source of truth → `orval` regenerates the typed client (`lib/api-client-react`) + zod (`lib/api-zod`). Generated diffs this session were **purely additive (0 deletions)**.
 - **Build:** runs on CI (Linux). Locally on Windows the esbuild native binary differs, so **typecheck is the local proxy** for compilation.
@@ -37,6 +37,8 @@ This is the live status of the BANCO Store monorepo (Banco Mobile · Banco Admin
 | **Billing export B4** | Invoice PDF download + monthly CSV from `/billing`; API `…/invoices/{id}/pdf` + `…/report.csv`; OpenAPI/orval. | unit tests + `test:lib` |
 | **Search engines P1-8** | Ten facet-gated `property_type` chips (duplex, penthouse, studio, townhouse, chalet, office, shop, warehouse, commercial_land) on home RE engines. | `test:lib` + i18n en/ar |
 | **Health smoke (P0)** | Automated vitest for `GET /api/healthz`, `/api/livez`, `/api/readyz` (no Clerk). | `health.test.ts` |
+| **P0 staging tooling** | `scripts/staging-p0-smoke.mjs` (upload byte-path) + `scripts/verify-upload-claims-schema.mjs`. | run on staging with secrets |
+| **P2 infra** | GCP deploy scaffold (`deploy/gcp/`), ESLint monorepo + CI job, mobile resilience tests. | `WAVE-P2-INFRA.md` |
 | **Upload schema P0 (C-01)** | `ensureSchemaPatches` on boot + `ensureSchema.test.ts` proves `upload_claims` exists. | DB integration test |
 
 **Deploy hardening already in place:** `app.listen` binds the port **before** `ensureDbExtensions` (the earlier deploy failure was the port never opening because startup awaited a DB extension). Process-level `unhandledRejection`/`uncaughtException` handlers added.

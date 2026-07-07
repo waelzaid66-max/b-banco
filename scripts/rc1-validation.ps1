@@ -51,6 +51,10 @@ Log-Step "06-mobile-typecheck" { pnpm --filter @workspace/banco-mobile run typec
 
 Log-Step "07-mobile-icons-test" { pnpm --filter @workspace/banco-mobile run test:icons; exit $LASTEXITCODE }
 
+Log-Step "07b-mobile-resilience-test" { pnpm --filter @workspace/banco-mobile run test:resilience; exit $LASTEXITCODE }
+
+Log-Step "07c-mobile-lib-test" { pnpm --filter @workspace/banco-mobile run test:lib; exit $LASTEXITCODE }
+
 # DB + tests
 $dbUp = Get-NetTCPConnection -State Listen -LocalPort 5433 -ErrorAction SilentlyContinue
 if (-not $dbUp) {

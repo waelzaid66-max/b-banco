@@ -6,25 +6,25 @@
 
 ---
 
-## P0-2 — CI green
+## P0-2 — CI green ✅
 
-After every push to `main`:
+Verified on GitHub Actions for `main` @ `49bcf62`:
 
-1. Open GitHub Actions → workflow **CI**
-2. Confirm jobs pass:
-   - **Typecheck & build** (all packages + api-server/dealer/admin/landing build)
-   - **API tests (Postgres)** (schema push + seed + full suite)
+- **Typecheck & build** — success  
+- **API tests (Postgres)** — success (includes `health.test.ts`, `ensureSchema.test.ts`, `uploadClaims.test.ts`)  
+- **ESLint (scripts)** — success after P2-11
 
 ```bash
 gh run list --branch main --limit 3
-gh run watch
+# or public API:
+# https://github.com/waelzaid66-max/-BANCO-CA-OOM-/actions
 ```
 
 ---
 
 ## P0-3 — `upload_claims` on staging/prod (C-01)
 
-### Automated (CI + tests)
+### Automated (CI + tests + boot)
 
 - CI runs `pnpm --filter @workspace/db run push-force` before tests.
 - `ensureSchemaPatches()` runs on **api-server boot** and **vitest global setup** (idempotent fallback).
@@ -35,25 +35,30 @@ pnpm --filter @workspace/api-server test ensureSchema
 pnpm --filter @workspace/api-server test uploadClaims
 ```
 
-### Manual on staging DB (once per environment)
+### Staging/prod DB verify (run once per environment)
+
+```bash
+DATABASE_URL=postgresql://... node scripts/verify-upload-claims-schema.mjs
+```
+
+Or:
 
 ```bash
 pnpm --filter @workspace/db run push-force
-# or rely on next api-server deploy (bootstrap calls ensureSchemaPatches)
-```
-
-Verify table:
-
-```sql
-SELECT column_name FROM information_schema.columns
-WHERE table_name = 'upload_claims' ORDER BY 1;
 ```
 
 ---
 
 ## P0-4 — Staging smoke (Clerk + real storage byte-path)
 
-**Prerequisites:** staging API URL, Clerk test user JWT, `OBJECT_STORAGE_*` configured (S3 or Replit).
+### Automated script
+
+```bash
+BANCO_API_URL=https://your-staging-api.example.com \
+CLERK_BEARER_TOKEN=eyJ... \
+CLERK_BEARER_TOKEN_OTHER=eyJ... \
+node scripts/staging-p0-smoke.mjs
+```
 
 | Step | Check | Pass criteria |
 |------|--------|----------------|
@@ -64,7 +69,9 @@ WHERE table_name = 'upload_claims' ORDER BY 1;
 | 5 | `POST /v1/uploads/verify` | 200 |
 | 6 | `POST /v1/uploads/promote` (same user) | 200 |
 | 7 | `POST /v1/uploads/promote` (other user, same URL) | **403** (IDOR blocked) |
-| 8 | Create listing with promoted media URL | listing saves; image serves |
+| 8 | GET serving URL | 200 |
+
+**Prerequisites:** staging API URL, Clerk JWT, `OBJECT_STORAGE_*` configured (S3/GCS/Replit).
 
 ### Mobile smoke (manual)
 
@@ -77,10 +84,11 @@ WHERE table_name = 'upload_claims' ORDER BY 1;
 
 ## Wave close-out checklist
 
-- [ ] PH-1 committed + pushed
-- [ ] CI green on `main`
-- [ ] `ensureSchema` + `uploadClaims` tests pass locally or on CI
-- [ ] Staging `upload_claims` confirmed (SQL or smoke step 3)
-- [ ] Staging upload byte-path smoke (steps 1–8)
+- [x] PH-1 committed + pushed
+- [x] CI green on `main` (GitHub Actions)
+- [x] `ensureSchema` + `uploadClaims` + `health` tests in CI suite
+- [x] Staging verify script: `scripts/verify-upload-claims-schema.mjs`
+- [x] Staging upload smoke script: `scripts/staging-p0-smoke.mjs`
+- [ ] Run verify + smoke **on your staging host** (needs env secrets)
 
-**Next after P0 green:** P1 backlog or B4 (invoice PDF) — not cloud production deploy.
+**Next:** RC validation / EAS preview — not cloud production deploy. B5 Paymob remains admin-only.

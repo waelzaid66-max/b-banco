@@ -9,7 +9,8 @@
     "serve": "node server/serve.js",
     "typecheck": "tsc -b ../../lib/api-client-react --force && tsc -p tsconfig.json --noEmit",
     "test:icons": "node --test tests/icons.test.mjs",
-    "test:lib": "node --test tests/lib-hardening.test.mjs"
+    "test:lib": "node --test tests/lib-hardening.test.mjs",
+    "test:resilience": "node --test tests/mobile-resilience.test.mjs"
   },
   "devDependencies": {
     "@babel/core": "^7.25.2",

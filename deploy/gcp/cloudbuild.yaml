@@ -1,0 +1,44 @@
+# Cloud Build → Artifact Registry → Cloud Run (template).
+# Substitute _REGION, _SERVICE, _SQL_CONNECTION_NAME in your GCP project.
+
+substitutions:
+  _REGION: europe-west1
+  _SERVICE: banco-api
+  _AR_REPO: banco
+
+steps:
+  - name: gcr.io/cloud-builders/docker
+    args:
+      - build
+      - -f
+      - deploy/gcp/Dockerfile.api
+      - -t
+      - ${_REGION}-docker.pkg.dev/$PROJECT_ID/${_AR_REPO}/api:$SHORT_SHA
+      - .
+
+  - name: gcr.io/cloud-builders/docker
+    args:
+      - push
+      - ${_REGION}-docker.pkg.dev/$PROJECT_ID/${_AR_REPO}/api:$SHORT_SHA
+
+  - name: gcr.io/google.com/cloudsdktool/cloud-sdk
+    entrypoint: gcloud
+    args:
+      - run
+      - deploy
+      - ${_SERVICE}
+      - --image=${_REGION}-docker.pkg.dev/$PROJECT_ID/${_AR_REPO}/api:$SHORT_SHA
+      - --region=${_REGION}
+      - --platform=managed
+      - --allow-unauthenticated
+      - --port=8080
+      - --set-env-vars=NODE_ENV=production,TZ=UTC
+      # Attach Cloud SQL + secrets via your project console or additional flags:
+      # --add-cloudsql-instances=PROJECT:REGION:INSTANCE
+      # --set-secrets=DATABASE_URL=banco-database-url:latest
+
+images:
+  - ${_REGION}-docker.pkg.dev/$PROJECT_ID/${_AR_REPO}/api:$SHORT_SHA
+
+options:
+  logging: CLOUD_LOGGING_ONLY
