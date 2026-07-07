@@ -152,7 +152,7 @@ health smoke (محلي)    → PASS بعد موجة 1 (قبل Clerk)
 | **B1** | ✅ فواتير UI (قراءة)، إيراد أدمن من ledger، OpenAPI payments — `WAVE-B1-BILLING-UI.md` | صفر |
 | **B2** | ✅ مركز مالي Hub + فلاتر معاملات + سجل promo — `WAVE-B2-FINANCE-HUB.md` | صفر |
 | **B3** | ✅ إشعارات وإيميل فوترة — `WAVE-B3-BILLING-NOTIFICATIONS.md` | منخفض |
-| **B4** | PDF فواتير/كشوف | منخفض |
+| **B4** | ✅ PDF فواتير + كشف CSV شهري — `WAVE-B4-EXPORT.md` | منخفض |
 | **B5** | تفعيل Paymob + خطط مدفوعة | **قرار إداري فقط** |
 
 **خارج v1:** محفظة بين مستخدمين، سحب أرباح، تقسيط، نقاط، كوبونات خصم.
@@ -180,6 +180,7 @@ audit/
 │   ├── WAVE-5-SEARCH-GEO-MAPS.md
 │   ├── WAVE-R1-FURNISHED-RENTAL-HUB.md
 │   ├── WAVE-PH1-PRODUCTION-HARDENING.md
+│   ├── WAVE-B4-EXPORT.md
 │   └── WAVE-P0-STAGING-VALIDATION.md
 │   └── WALLET-BILLING-FINANCE-AUDIT.md
 ├── rc1/

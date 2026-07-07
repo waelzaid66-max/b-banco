@@ -522,6 +522,9 @@ export const NotificationType = {
   investment: 'investment',
   global_supply: 'global_supply',
   booking: 'booking',
+  payment_success: 'payment_success',
+  payment_failed: 'payment_failed',
+  subscription_expiring: 'subscription_expiring',
 } as const;
 
 export type NotificationData = { [key: string]: unknown } | null;
@@ -655,6 +658,9 @@ export const NotificationPreferenceType = {
   investment: 'investment',
   global_supply: 'global_supply',
   booking: 'booking',
+  payment_success: 'payment_success',
+  payment_failed: 'payment_failed',
+  subscription_expiring: 'subscription_expiring',
 } as const;
 
 /**
@@ -3804,7 +3810,28 @@ cursor?: string;
  * @maximum 50
  */
 limit?: number;
+/**
+ * ISO-8601 lower bound (inclusive) on created_at
+ */
+from?: string;
+/**
+ * ISO-8601 upper bound (inclusive) on created_at
+ */
+to?: string;
+type?: ListTransactionsType;
 };
+
+export type ListTransactionsType = typeof ListTransactionsType[keyof typeof ListTransactionsType];
+
+
+export const ListTransactionsType = {
+  wallet_topup: 'wallet_topup',
+  boost_charge: 'boost_charge',
+  subscription_charge: 'subscription_charge',
+  lead_charge: 'lead_charge',
+  refund: 'refund',
+  adjustment: 'adjustment',
+} as const;
 
 export type ListTransactions200 = {
   data?: WalletTransaction[];
@@ -3904,6 +3931,13 @@ export type GetInvoice200 = {
   data?: Invoice;
   error?: ApiError | null;
   meta?: Meta;
+};
+
+export type GetBillingReportCsvParams = {
+/**
+ * Report month as YYYY-MM (UTC). Defaults to the current month.
+ */
+month?: string;
 };
 
 export type GetBillingReportParams = {

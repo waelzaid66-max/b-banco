@@ -14,6 +14,8 @@ import {
   getInvoice,
   getBillingReport,
 } from "../services/BillingService";
+import { buildInvoicePdf } from "../lib/invoicePdf";
+import { billingReportToCsv } from "../lib/billingCsv";
 
 function handleError(res: Response, err: unknown, fallback: string, tag: string) {
   if (err instanceof ZodError) {
@@ -67,5 +69,38 @@ export async function getBillingReportHandler(req: Request, res: Response) {
     return res.json(successResponse(validated));
   } catch (err) {
     return handleError(res, err, "Failed to load billing report", "[Billing report]");
+  }
+}
+
+export async function getInvoicePdfHandler(req: Request, res: Response) {
+  try {
+    const invoiceId = z.string().uuid().parse(req.params.id);
+    const invoice = await getInvoice(req.dbUserId!, invoiceId);
+    const pdf = buildInvoicePdf(invoice);
+    const safeName = invoice.invoice_number.replace(/[^\w.-]+/g, "_");
+    res.setHeader("Content-Type", "application/pdf");
+    res.setHeader(
+      "Content-Disposition",
+      `attachment; filename="invoice-${safeName}.pdf"`,
+    );
+    return res.send(pdf);
+  } catch (err) {
+    return handleError(res, err, "Failed to export invoice PDF", "[Billing invoice PDF]");
+  }
+}
+
+export async function getBillingReportCsvHandler(req: Request, res: Response) {
+  try {
+    const query = BillingReportQuerySchema.parse(req.query);
+    const report = await getBillingReport(req.dbUserId!, { month: query.month });
+    const csv = billingReportToCsv(report);
+    res.setHeader("Content-Type", "text/csv; charset=utf-8");
+    res.setHeader(
+      "Content-Disposition",
+      `attachment; filename="banco-billing-${report.month}.csv"`,
+    );
+    return res.send(csv);
+  } catch (err) {
+    return handleError(res, err, "Failed to export billing CSV", "[Billing report CSV]");
   }
 }

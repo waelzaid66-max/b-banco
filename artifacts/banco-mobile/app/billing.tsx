@@ -13,6 +13,7 @@ import { router, type Href } from "expo-router";
 import React, { useCallback, useEffect, useState } from "react";
 import {
   ActivityIndicator,
+  Alert,
   Platform,
   Pressable,
   RefreshControl,
@@ -25,6 +26,7 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { AppText } from "@/components/AppText";
 import { useI18n } from "@/context/LanguageContext";
 import { useColors } from "@/hooks/useColors";
+import { exportBillingReportCsv } from "@/lib/billingExport";
 
 type LoadState = "loading" | "ready" | "error";
 
@@ -71,6 +73,7 @@ export default function BillingHubScreen() {
   const [promo, setPromo] = useState<PromoAdSummary | null>(null);
   const [subscription, setSubscription] = useState<SubscriptionMe | null>(null);
   const [recentTx, setRecentTx] = useState<WalletTransaction[]>([]);
+  const [exportingCsv, setExportingCsv] = useState(false);
 
   const load = useCallback(async () => {
     try {
@@ -103,6 +106,18 @@ export default function BillingHubScreen() {
     await load();
     setRefreshing(false);
   }, [load]);
+
+  const onExportCsv = useCallback(async () => {
+    if (exportingCsv) return;
+    setExportingCsv(true);
+    try {
+      await exportBillingReportCsv();
+    } catch {
+      Alert.alert(t("common.error"), t("billing.exportFailed"));
+    } finally {
+      setExportingCsv(false);
+    }
+  }, [exportingCsv, t]);
 
   const links: HubLink[] = [
     {
@@ -311,6 +326,37 @@ export default function BillingHubScreen() {
             ))}
           </View>
 
+          <Pressable
+            onPress={onExportCsv}
+            disabled={exportingCsv}
+            style={[
+              styles.exportCard,
+              {
+                flexDirection: rowDir,
+                backgroundColor: colors.card,
+                borderColor: colors.border,
+                borderRadius: colors.radius,
+              },
+            ]}
+            testID="billing-export-csv"
+          >
+            <View style={[styles.exportIcon, { backgroundColor: colors.primary + "18" }]}>
+              {exportingCsv ? (
+                <ActivityIndicator color={colors.primary} size="small" />
+              ) : (
+                <Feather name="download" size={18} color={colors.primary} />
+              )}
+            </View>
+            <View style={styles.exportBody}>
+              <AppText style={[styles.exportTitle, { color: colors.foreground }]}>
+                {t("billing.exportCsv")}
+              </AppText>
+              <AppText style={[styles.exportHint, { color: colors.mutedForeground }]}>
+                {t("billing.exportCsvHint")}
+              </AppText>
+            </View>
+          </Pressable>
+
           <View style={[styles.sectionHead, { flexDirection: rowDir }]}>
             <AppText style={[styles.sectionTitle, { color: colors.foreground }]}>
               {t("billing.recentActivity")}
@@ -440,6 +486,22 @@ const styles = StyleSheet.create({
   },
   linkTitle: { fontSize: 14, fontWeight: "700" },
   linkHint: { fontSize: 12, lineHeight: 17 },
+  exportCard: {
+    alignItems: "center",
+    gap: 12,
+    padding: 14,
+    borderWidth: StyleSheet.hairlineWidth,
+  },
+  exportIcon: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  exportBody: { flex: 1, gap: 4 },
+  exportTitle: { fontSize: 14, fontWeight: "700" },
+  exportHint: { fontSize: 12, lineHeight: 17 },
   emptyCard: { padding: 24, alignItems: "center" },
   emptyText: { fontSize: 14, textAlign: "center" },
   txCard: { paddingHorizontal: 16, paddingVertical: 4 },

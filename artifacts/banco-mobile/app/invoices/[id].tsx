@@ -8,6 +8,7 @@ import { router, useLocalSearchParams, type Href } from "expo-router";
 import React, { useCallback, useEffect, useState } from "react";
 import {
   ActivityIndicator,
+  Alert,
   Platform,
   Pressable,
   ScrollView,
@@ -19,6 +20,7 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { AppText } from "@/components/AppText";
 import { useI18n } from "@/context/LanguageContext";
 import { useColors } from "@/hooks/useColors";
+import { downloadInvoicePdf } from "@/lib/billingExport";
 
 type LoadState = "loading" | "ready" | "error";
 
@@ -58,6 +60,7 @@ export default function InvoiceDetailScreen() {
 
   const [state, setState] = useState<LoadState>("loading");
   const [invoice, setInvoice] = useState<Invoice | undefined>(undefined);
+  const [exporting, setExporting] = useState(false);
 
   const load = useCallback(async () => {
     if (!id) {
@@ -76,6 +79,18 @@ export default function InvoiceDetailScreen() {
   useEffect(() => {
     load();
   }, [load]);
+
+  const onDownloadPdf = useCallback(async () => {
+    if (!invoice?.id || exporting) return;
+    setExporting(true);
+    try {
+      await downloadInvoicePdf(invoice.id, invoice.invoice_number);
+    } catch {
+      Alert.alert(t("common.error"), t("invoices.exportFailed"));
+    } finally {
+      setExporting(false);
+    }
+  }, [exporting, invoice, t]);
 
   return (
     <View style={[styles.container, { backgroundColor: colors.background }]}>
@@ -218,6 +233,30 @@ export default function InvoiceDetailScreen() {
               </View>
             </>
           ) : null}
+
+          <Pressable
+            onPress={onDownloadPdf}
+            disabled={exporting}
+            style={[
+              styles.exportBtn,
+              {
+                backgroundColor: colors.card,
+                borderColor: colors.border,
+                borderRadius: colors.radius,
+                flexDirection: rowDir,
+              },
+            ]}
+            testID="invoice-download-pdf"
+          >
+            {exporting ? (
+              <ActivityIndicator color={colors.primary} size="small" />
+            ) : (
+              <Feather name="download" size={18} color={colors.primary} />
+            )}
+            <AppText style={[styles.exportBtnText, { color: colors.foreground }]}>
+              {t("invoices.downloadPdf")}
+            </AppText>
+          </Pressable>
         </ScrollView>
       )}
     </View>
@@ -287,4 +326,13 @@ const styles = StyleSheet.create({
   lineRow: { alignItems: "center", justifyContent: "space-between", paddingVertical: 14, gap: 12 },
   lineLabel: { fontSize: 14 },
   lineAmount: { fontSize: 14, fontWeight: "700" },
+  exportBtn: {
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 10,
+    paddingVertical: 14,
+    paddingHorizontal: 16,
+    borderWidth: StyleSheet.hairlineWidth,
+  },
+  exportBtnText: { fontSize: 15, fontWeight: "600" },
 });

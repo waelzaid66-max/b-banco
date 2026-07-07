@@ -71,3 +71,19 @@ test("billing, wallet, and invoices are registered stack routes", () => {
     );
   }
 });
+
+test("billing hub exposes monthly CSV export", () => {
+  const src = fs.readFileSync(path.join(APP_ROOT, "app", "billing.tsx"), "utf8");
+  assert.match(
+    src,
+    /exportBillingReportCsv/,
+    "billing hub must call exportBillingReportCsv for statement export",
+  );
+  assert.match(src, /testID="billing-export-csv"/, "billing export control must be testable");
+});
+
+test("invoice detail exposes PDF download", () => {
+  const src = fs.readFileSync(path.join(APP_ROOT, "app", "invoices", "[id].tsx"), "utf8");
+  assert.match(src, /downloadInvoicePdf/, "invoice detail must support PDF export");
+  assert.match(src, /testID="invoice-download-pdf"/, "invoice PDF button must be testable");
+});

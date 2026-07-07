@@ -1,8 +1,8 @@
 # BANCO Store — Completion & Status Report
 
-_Last updated: 2026-07-08 — PH-1 production hardening + P0 staging validation + icon registry fix._
+_Last updated: 2026-07-08 — Wave B4 billing export (PDF + CSV) + PH-1 hardening._
 
-> **Release line:** `main` @ `ddd6cd3`+ — verified locally: **typecheck 0 errors (7 packages)**, **289 API tests passed** (3 skipped), **11 mobile regression tests passed**.
+> **Release line:** `main` — verified locally: **typecheck 0 errors (mobile + api-client)**, **API PDF/CSV unit tests passed**, **13 mobile regression tests passed** (`test:lib` + `test:icons`).
 
 This is the live status of the BANCO Store monorepo (Banco Mobile · Banco Admin · Banco Market/dealer-os · API Server · shared libs). It records what is **done and verified**, the **architecture**, and the **honest remaining items** with the reason each is or isn't locally verifiable.
 
@@ -34,6 +34,7 @@ This is the live status of the BANCO Store monorepo (Banco Mobile · Banco Admin
 | **Adaptive Data philosophy** | Custom specs (unlimited), search across description + spec values, minimal floor, Candidate-Attributes learning pipeline. | tests |
 | **Furnished rental host hub (R1)** | Isolated `/rentals/hub` for `is_bookable` units; edit listing (title/location/price); profile menu + booking deep-links; separate from sale/long-term rent. | mobile typecheck + manual path review |
 | **Production hardening PH-1** | Profile Payments → `/billing` hub; finance stack routes; notification deep-links guarded; `WAVE-P0-STAGING-VALIDATION.md` checklist. | `test:lib` + typecheck |
+| **Billing export B4** | Invoice PDF download + monthly CSV from `/billing`; API `…/invoices/{id}/pdf` + `…/report.csv`; OpenAPI/orval. | unit tests + `test:lib` |
 | **Upload schema P0 (C-01)** | `ensureSchemaPatches` on boot + `ensureSchema.test.ts` proves `upload_claims` exists. | DB integration test |
 
 **Deploy hardening already in place:** `app.listen` binds the port **before** `ensureDbExtensions` (the earlier deploy failure was the port never opening because startup awaited a DB extension). Process-level `unhandledRejection`/`uncaughtException` handlers added.

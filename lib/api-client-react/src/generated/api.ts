@@ -94,6 +94,7 @@ import type {
   GetAutocomplete200,
   GetAutocompleteParams,
   GetBillingReport200,
+  GetBillingReportCsvParams,
   GetBillingReportParams,
   GetCompany200,
   GetCompanyListings200,
@@ -4938,7 +4939,7 @@ export const bulkImportListings = async (bulkImportListingsBody: Blob, options?:
     ...options,
     method: 'POST',
     headers: { 'Content-Type': 'text/csv', ...options?.headers },
-    body: bulkImportListingsBody
+    body: JSON.stringify(bulkImportListingsBody)
   }
 );}
 
@@ -6112,6 +6113,83 @@ export function useListInvoices<TData = Awaited<ReturnType<typeof listInvoices>>
 
 
 
+export const getGetInvoicePdfUrl = (id: string,) => {
+
+
+
+
+  return `/api/v1/billing/invoices/${id}/pdf`
+}
+
+/**
+ * @summary Download a PDF copy of an invoice the caller owns
+ */
+export const getInvoicePdf = async (id: string, options?: RequestInit): Promise<Blob> => {
+
+  return customFetch<Blob>(getGetInvoicePdfUrl(id),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetInvoicePdfQueryKey = (id: string,) => {
+    return [
+    `/api/v1/billing/invoices/${id}/pdf`
+    ] as const;
+    }
+
+
+export const getGetInvoicePdfQueryOptions = <TData = Awaited<ReturnType<typeof getInvoicePdf>>, TError = ErrorType<void>>(id: string, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getInvoicePdf>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetInvoicePdfQueryKey(id);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getInvoicePdf>>> = ({ signal }) => getInvoicePdf(id, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, enabled: id !== null && id !== undefined, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getInvoicePdf>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetInvoicePdfQueryResult = NonNullable<Awaited<ReturnType<typeof getInvoicePdf>>>
+export type GetInvoicePdfQueryError = ErrorType<void>
+
+
+/**
+ * @summary Download a PDF copy of an invoice the caller owns
+ */
+
+export function useGetInvoicePdf<TData = Awaited<ReturnType<typeof getInvoicePdf>>, TError = ErrorType<void>>(
+ id: string, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getInvoicePdf>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetInvoicePdfQueryOptions(id,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+
+
+
+
+
+
 export const getGetInvoiceUrl = (id: string,) => {
 
 
@@ -6177,6 +6255,90 @@ export function useGetInvoice<TData = Awaited<ReturnType<typeof getInvoice>>, TE
  ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
 
   const queryOptions = getGetInvoiceQueryOptions(id,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+
+
+
+
+
+
+export const getGetBillingReportCsvUrl = (params?: GetBillingReportCsvParams,) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? 'null' : String(value))
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0 ? `/api/v1/billing/report.csv?${stringifiedParams}` : `/api/v1/billing/report.csv`
+}
+
+/**
+ * @summary Monthly billing summary as CSV (ledger breakdown)
+ */
+export const getBillingReportCsv = async (params?: GetBillingReportCsvParams, options?: RequestInit): Promise<string> => {
+
+  return customFetch<string>(getGetBillingReportCsvUrl(params),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetBillingReportCsvQueryKey = (params?: GetBillingReportCsvParams,) => {
+    return [
+    `/api/v1/billing/report.csv`, ...(params ? [params] : [])
+    ] as const;
+    }
+
+
+export const getGetBillingReportCsvQueryOptions = <TData = Awaited<ReturnType<typeof getBillingReportCsv>>, TError = ErrorType<unknown>>(params?: GetBillingReportCsvParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getBillingReportCsv>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetBillingReportCsvQueryKey(params);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getBillingReportCsv>>> = ({ signal }) => getBillingReportCsv(params, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getBillingReportCsv>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetBillingReportCsvQueryResult = NonNullable<Awaited<ReturnType<typeof getBillingReportCsv>>>
+export type GetBillingReportCsvQueryError = ErrorType<unknown>
+
+
+/**
+ * @summary Monthly billing summary as CSV (ledger breakdown)
+ */
+
+export function useGetBillingReportCsv<TData = Awaited<ReturnType<typeof getBillingReportCsv>>, TError = ErrorType<unknown>>(
+ params?: GetBillingReportCsvParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getBillingReportCsv>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetBillingReportCsvQueryOptions(params,options)
 
   const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
 

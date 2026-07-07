@@ -2298,7 +2298,10 @@ export const listTransactionsQueryLimitMax = 50;
 
 export const ListTransactionsQueryParams = zod.object({
   "cursor": zod.coerce.string().optional(),
-  "limit": zod.coerce.number().min(1).max(listTransactionsQueryLimitMax).default(listTransactionsQueryLimitDefault)
+  "limit": zod.coerce.number().min(1).max(listTransactionsQueryLimitMax).default(listTransactionsQueryLimitDefault),
+  "from": zod.date().optional().describe('ISO-8601 lower bound (inclusive) on created_at'),
+  "to": zod.date().optional().describe('ISO-8601 upper bound (inclusive) on created_at'),
+  "type": zod.enum(['wallet_topup', 'boost_charge', 'subscription_charge', 'lead_charge', 'refund', 'adjustment']).optional()
 })
 
 export const ListTransactionsResponse = zod.object({
@@ -2692,6 +2695,16 @@ export const ListInvoicesResponse = zod.object({
 
 
 /**
+ * @summary Download a PDF copy of an invoice the caller owns
+ */
+export const GetInvoicePdfParams = zod.object({
+  "id": zod.coerce.string().uuid()
+})
+
+export const GetInvoicePdfResponse = zod.unknown()
+
+
+/**
  * @summary Get a single invoice the caller owns
  */
 export const GetInvoiceParams = zod.object({
@@ -2724,6 +2737,16 @@ export const GetInvoiceResponse = zod.object({
   "total": zod.number().optional()
 }).optional()
 })
+
+
+/**
+ * @summary Monthly billing summary as CSV (ledger breakdown)
+ */
+export const GetBillingReportCsvQueryParams = zod.object({
+  "month": zod.coerce.string().optional().describe('Report month as YYYY-MM (UTC). Defaults to the current month.')
+})
+
+export const GetBillingReportCsvResponse = zod.unknown()
 
 
 /**
