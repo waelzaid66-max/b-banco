@@ -53,6 +53,8 @@ import {
   type CarBrand,
 } from "@/constants/cars";
 import { labelForValue } from "@/constants/locations";
+import { RENTAL_TERMS } from "@/constants/listingCreateTaxonomy";
+import { engineByKey, enginesForCategory } from "@/constants/engines";
 import { useI18n } from "@/context/LanguageContext";
 import { SavedSearch, useSession } from "@/context/SessionContext";
 import { useSound } from "@/context/SoundContext";
@@ -94,6 +96,7 @@ const CLEAR_ATTRS: Partial<SearchCriteria> = {
   industry: null,
   originType: null,
   industrialType: "all",
+  rentalTerm: null,
 };
 
 // The category-independent filters, reset by the sheet's "Clear all" (combined
@@ -184,11 +187,13 @@ export default function SearchScreen() {
   const params = useLocalSearchParams<{
     q?: string;
     category?: string;
+    engine?: string;
     minPrice?: string;
     maxPrice?: string;
     location?: string;
     paymentType?: string;
     sort?: string;
+    ts?: string;
   }>();
 
   // Fire a coarse behaviour signal on each committed search (category intent).
@@ -397,10 +402,8 @@ export default function SearchScreen() {
   // Re-run a saved search arriving via navigation params.
   const appliedSig = useRef<string>("");
   useEffect(() => {
-    // Navigation can arrive with a free-text query, a category, and/or a sort
-    // (the Home "Sort" launcher pushes only `sort`). Any one of the three is
-    // enough to commit a browse; bare navigation with none of them is ignored.
-    if (!params.q && !params.sort && !params.category) return;
+    // Navigation can arrive with a free-text query, category, engine, and/or sort.
+    if (!params.q && !params.sort && !params.category && !params.engine) return;
     const sig = JSON.stringify(params);
     if (sig === appliedSig.current) return;
     appliedSig.current = sig;
@@ -408,6 +411,11 @@ export default function SearchScreen() {
     const category = (CATEGORIES.includes(params.category as FilterCategory)
       ? params.category
       : "all") as FilterCategory;
+    const engineDefs = enginesForCategory(category);
+    const engineKey =
+      params.engine && engineDefs?.some((e) => e.key === params.engine)
+        ? String(params.engine)
+        : "all";
     const pt: PaymentType =
       params.paymentType === "installment" ? "installment" : "any";
     const sort: SearchSort = (SORTS.includes(params.sort as SearchSort)
@@ -424,6 +432,7 @@ export default function SearchScreen() {
       ...DEFAULT_CRITERIA,
       q,
       category,
+      engineKey,
       minPrice: minP,
       maxPrice: maxP,
       location: loc,
@@ -492,8 +501,13 @@ export default function SearchScreen() {
     update({ ...CLEAR_ATTRS, category: "real_estate", engineKey: "all" });
   };
 
-  // Engine "Type" chip selection inside the sheet → committed criteria.
-  const selectEngine = (key: string) => update({ engineKey: key });
+  // Engine chip → committed criteria; sale (تمليك) clears rent-only filters.
+  const selectEngine = (key: string) => {
+    const engine = engineByKey(criteria.category, key);
+    const patch: Partial<SearchCriteria> = { engineKey: key };
+    if (engine?.params.offer_type === "sale") patch.rentalTerm = null;
+    update(patch);
+  };
 
   const selectIndustrialType = (type: IndustrialType) =>
     update({ industrialType: type });
@@ -501,10 +515,18 @@ export default function SearchScreen() {
   const selectOrigin = (o: "all" | "local" | "imported") =>
     update({ originType: o === "all" ? null : o });
 
+  const selectRentalTerm = (term: string) =>
+    update({ rentalTerm: criteria.rentalTerm === term ? null : term });
+
   const originKey: "all" | "local" | "imported" =
     criteria.originType === "local" || criteria.originType === "imported"
       ? criteria.originType
       : "all";
+
+  const showRentalTerms =
+    criteria.category === "real_estate" &&
+    engineByKey(criteria.category, criteria.engineKey)?.params.offer_type !==
+      "sale";
 
   // Quick brand chip inside the sheet (closes the sheet via browseBrand).
   const browseBrandChip = useCallback(
@@ -791,6 +813,46 @@ export default function SearchScreen() {
             );
           })}
         </View>
+      ) : null}
+      {showRentalTerms ? (
+        <ScrollView
+          horizontal
+          showsHorizontalScrollIndicator={false}
+          contentContainerStyle={[styles.originRow, { flexDirection: rowDir }]}
+        >
+          {RENTAL_TERMS.map((r) => {
+            const active = criteria.rentalTerm === r.value;
+            return (
+              <Pressable
+                key={r.value}
+                onPress={() => {
+                  playSound("tap");
+                  selectRentalTerm(r.value);
+                }}
+                style={[
+                  styles.originChip,
+                  {
+                    backgroundColor: active ? colors.primary : colors.secondary,
+                  },
+                ]}
+                testID={`search-rental-${r.value}`}
+              >
+                <AppText
+                  style={[
+                    styles.originChipText,
+                    {
+                      color: active
+                        ? colors.primaryForeground
+                        : colors.mutedForeground,
+                    },
+                  ]}
+                >
+                  {isRTL ? r.ar : r.en}
+                </AppText>
+              </Pressable>
+            );
+          })}
+        </ScrollView>
       ) : null}
 
       {/* Orientation line: how many results the current criteria produced.

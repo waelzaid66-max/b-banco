@@ -144,6 +144,18 @@ const REAL_ESTATE_ENGINES: EngineDef[] = [
     params: { property_type: "apartment" },
   },
   {
+    key: "land",
+    i18nKey: "home.engines.land",
+    params: { property_type: "land" },
+    requiresFacet: true,
+  },
+  {
+    key: "hotel",
+    i18nKey: "home.engines.hotel",
+    params: { property_type: "hotel" },
+    requiresFacet: true,
+  },
+  {
     key: "compound",
     i18nKey: "home.engines.compound",
     params: { compound: true },

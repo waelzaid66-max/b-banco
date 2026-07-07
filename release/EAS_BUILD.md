@@ -29,6 +29,11 @@ eas env:create --environment production --name EXPO_PUBLIC_DOMAIN --value api.YO
 eas env:create --environment production --name EXPO_PUBLIC_CLERK_PUBLISHABLE_KEY --value pk_live_...
 ```
 
+`eas.json` profiles:
+- `preview` — internal APK (Android) + iOS device build; uses production env vars.
+- `production` — Play **app-bundle** + iOS with `autoIncrement` on build number.
+- `app.json` — `android.versionCode`, `ios.buildNumber` (local source; EAS `appVersionSource: local`).
+
 ## Build + install
 ```bash
 cd artifacts/banco-mobile
