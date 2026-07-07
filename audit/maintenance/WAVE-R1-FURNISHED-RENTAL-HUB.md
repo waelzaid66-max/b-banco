@@ -55,3 +55,5 @@ pnpm --filter banco-mobile exec tsc --noEmit → PASS
 Host hub reads `useGetMyListings` + `useListBookings({ role: "host" })`.  
 Booking widget on listing detail unchanged (`BookingCard`, `furnished_daily` only).  
 Sale and annual rent listings never appear in hub (`filterBookableListings`).
+
+**Copy:** single hero line only — no competitor or hotel disclaimers in UI.

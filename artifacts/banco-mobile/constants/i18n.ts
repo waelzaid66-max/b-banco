@@ -784,9 +784,7 @@ const en = {
       title: "Furnished rentals",
       subtitle: "Short-stay hosting — daily, weekly & monthly",
       philosophy:
-        "A professional marketplace to showcase furnished units, availability and prices — and receive booking requests directly. Separate from sale and long-term rent listings.",
-      notHotelNote:
-        "BANCO does not run hotel operations (check-in desks, housekeeping, staff). We focus on discovery, comparison and booking requests.",
+        "Show furnished units, prices and availability, and receive stay requests directly. Separate from sale and long-term rent listings.",
       pendingRequests: "Pending requests",
       activeUnits: "Bookable units",
       viewRequests: "Booking requests",
@@ -2560,9 +2558,7 @@ const ar: typeof en = {
       title: "الإيجار المفروش",
       subtitle: "استضافة الإقامات القصيرة — يومي وأسبوعي وشهري",
       philosophy:
-        "سوق احترافي لعرض الوحدات المفروشة والأسعار والتوافر واستقبال طلبات الحجز مباشرة. منفصل تماماً عن البيع والإيجار طويل الأمد.",
-      notHotelNote:
-        "بانكو لا يشغّل عمليات فندقية (استقبال، تنظيف، موظفين). نركز على البحث والمقارنة وطلبات الحجز.",
+        "اعرض وحداتك المفروشة والأسعار والتوافر واستقبل طلبات الإقامة مباشرة. منفصل عن البيع والإيجار طويل الأمد.",
       pendingRequests: "طلبات قيد الانتظار",
       activeUnits: "وحدات قابلة للحجز",
       viewRequests: "طلبات الحجز",

@@ -9,7 +9,7 @@ import {
 import { useQueryClient } from "@tanstack/react-query";
 import * as Haptics from "expo-haptics";
 import { router, useLocalSearchParams } from "expo-router";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import {
   ActivityIndicator,
   FlatList,
@@ -62,6 +62,12 @@ export default function BookingsScreen() {
   const [role, setRole] = useState<ListBookingsRole>(
     roleParam === "host" ? "host" : "guest",
   );
+
+  useEffect(() => {
+    if (roleParam === "host" || roleParam === "guest") {
+      setRole(roleParam);
+    }
+  }, [roleParam]);
   const { data, isLoading, isError, refetch, isRefetching } = useListBookings(
     { role },
     { query: { queryKey: getListBookingsQueryKey({ role }) } },

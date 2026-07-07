@@ -27,7 +27,6 @@ import { filterBookableListings } from "@/lib/rentalHost";
 
 /**
  * Furnished / daily rental host hub — isolated from sale & long-term rent.
- * Marketplace for discovery + booking requests, not hotel PMS.
  */
 export default function RentalHostHubScreen() {
   const colors = useColors();
@@ -108,9 +107,6 @@ export default function RentalHostHubScreen() {
           </AppText>
           <AppText style={[styles.heroBody, { color: colors.mutedForeground, textAlign: isRTL ? "right" : "left" }]}>
             {t("rentals.hub.philosophy")}
-          </AppText>
-          <AppText style={[styles.heroNote, { color: colors.mutedForeground, textAlign: isRTL ? "right" : "left" }]}>
-            {t("rentals.hub.notHotelNote")}
           </AppText>
         </View>
 
@@ -362,7 +358,6 @@ const styles = StyleSheet.create({
   },
   heroTitle: { fontSize: 16, fontWeight: "700" },
   heroBody: { fontSize: 14, lineHeight: 20 },
-  heroNote: { fontSize: 12, lineHeight: 18, fontStyle: "italic" },
   centered: { paddingVertical: 40, alignItems: "center" },
   statsRow: { paddingHorizontal: 16, gap: 10, marginBottom: 12 },
   statCard: {

@@ -1,8 +1,8 @@
 # BANCO Store — Completion & Status Report
 
-_Last updated: 2026-07-02 — unified snapshot on B-OOM (local work + Replit workspace work on ONE history line, no divergence)._
+_Last updated: 2026-07-07 — wave R1 furnished rental hub + billing UI (B1–B3), waves 4–5 search/geo._
 
-> **Version unification:** the Replit workspace pushed its commits ON TOP of the previous B-OOM snapshot (fast-forward — zero conflicts). This repo now contains BOTH work streams: the local backend/contract work AND Replit's runtime fixes (header B-OOM animation, upload permission prompts + error handling, object-storage config fix, request-log de-dup, map UI viewport wiring, OpenAI key priority). Verified locally after unification: **recursive typecheck 0 errors across all 7 packages**.
+> **Release line:** `main` @ `7a1c2e8`+ — verified locally: **typecheck 0 errors (7 packages)**, **288 API tests passed** (3 skipped).
 
 This is the live status of the BANCO Store monorepo (Banco Mobile · Banco Admin · Banco Market/dealer-os · API Server · shared libs). It records what is **done and verified**, the **architecture**, and the **honest remaining items** with the reason each is or isn't locally verifiable.
 
@@ -10,7 +10,7 @@ This is the live status of the BANCO Store monorepo (Banco Mobile · Banco Admin
 
 ## 1. How verification works here
 
-- **Backend (api-server):** real integration tests on a real PostgreSQL — `pnpm --filter @workspace/api-server test`. Current state: **247 passed / 3 skipped / 0 failing**.
+- **Backend (api-server):** real integration tests on a real PostgreSQL — `pnpm --filter @workspace/api-server test`. Current state: **288 passed / 3 skipped / 0 failing**.
 - **Type safety (all surfaces):** `pnpm -r --if-present run typecheck` → **0 errors across 7 packages** (api-server, banco-mobile, admin-os, dealer-os, landing, mockup-sandbox, scripts).
 - **API contract:** `lib/api-spec/openapi.yaml` is the source of truth → `orval` regenerates the typed client (`lib/api-client-react`) + zod (`lib/api-zod`). Generated diffs this session were **purely additive (0 deletions)**.
 - **Build:** runs on CI (Linux). Locally on Windows the esbuild native binary differs, so **typecheck is the local proxy** for compilation.
@@ -31,6 +31,7 @@ This is the live status of the BANCO Store monorepo (Banco Mobile · Banco Admin
 | **Observability** | Server: structured error reporting + optional alert webhook + process-level unhandled-error capture. Mobile: global JS + React render crash capture. | tests + wired |
 | **Marketplace lifecycle** | publish → appears (feed + search + SEO) → open → message → favorite → edit → bump → archive → republish → delete (+ cascade). | end-to-end DB test |
 | **Adaptive Data philosophy** | Custom specs (unlimited), search across description + spec values, minimal floor, Candidate-Attributes learning pipeline. | tests |
+| **Furnished rental host hub (R1)** | Isolated `/rentals/hub` for `is_bookable` units; edit listing (title/location/price); profile menu + booking deep-links; separate from sale/long-term rent. | mobile typecheck + manual path review |
 
 **Deploy hardening already in place:** `app.listen` binds the port **before** `ensureDbExtensions` (the earlier deploy failure was the port never opening because startup awaited a DB extension). Process-level `unhandledRejection`/`uncaughtException` handlers added.
 
