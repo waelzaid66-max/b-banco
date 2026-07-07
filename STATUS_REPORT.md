@@ -2,7 +2,7 @@
 
 _Last updated: 2026-07-08 — CI fix (ESLint URL global) + full verification sweep._
 
-> **Release line:** `main` — verified locally: **294 API tests passed / 3 skipped**, **20 mobile regression tests passed**, **ESLint scripts clean**, **CI 4 jobs** (build · API · lint · mobile).
+> **Release line:** `main` @ `52b0e41` — verified locally + CI: **294 API tests passed / 3 skipped**, **20 mobile regression tests passed**, **ESLint scripts clean**, **CI 4/4 green** ([run #12](https://github.com/waelzaid66-max/-BANCO-CA-OOM-/actions/runs/28904249869)).
 
 This is the live status of the BANCO Store monorepo (Banco Mobile · Banco Admin · Banco Market/dealer-os · API Server · shared libs). It records what is **done and verified**, the **architecture**, and the **honest remaining items** with the reason each is or isn't locally verifiable.
 
