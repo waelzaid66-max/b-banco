@@ -53,6 +53,10 @@ Thumbs.db
 
 # local verification logs (agent/CI scratch)
 *-out.txt
+_agent_out.txt
+_confidence_out.txt
+_pnpm_install.log
+audit/rc1/*.log
 
 # large/sensitive artifacts — keep on disk, never track (bloat + data-exposure)
 database_backup.dump

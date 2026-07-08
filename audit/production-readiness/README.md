@@ -1,8 +1,11 @@
 # Production Readiness — BANCO Store
 
 **Purpose:** 21-phase verification program for cloud launch readiness (no production deploy from this track).  
-**Last updated:** 2026-07-08  
-**Master maintenance plan:** [`audit/maintenance/MASTER-MAINTENANCE-READINESS-PLAN.md`](../maintenance/MASTER-MAINTENANCE-READINESS-PLAN.md)
+**Last updated:** 2026-07-08 (phases 02–20 closed by inspection)  
+**Master maintenance plan:** [`audit/maintenance/MASTER-MAINTENANCE-READINESS-PLAN.md`](../maintenance/MASTER-MAINTENANCE-READINESS-PLAN.md)  
+** أين وصلنا:** [`FULL-READINESS-STATUS-PLAN.md`](./FULL-READINESS-STATUS-PLAN.md)  
+**Open items:** [`OPEN-ITEMS-BACKLOG.md`](./OPEN-ITEMS-BACKLOG.md)  
+**Secrets (operator):** [`STAGING-REQUIRED-SECRETS.md`](./STAGING-REQUIRED-SECRETS.md)
 
 ---
 
@@ -10,83 +13,37 @@
 
 | Phase | Focus | Status | Report |
 |------:|-------|--------|--------|
-| 01 | Core architecture (pnpm workspace, deps, CI lockfile) | **pass** | [PHASE-01-CORE-ARCHITECTURE.md](./PHASE-01-CORE-ARCHITECTURE.md) |
-| 02 | Database & schema (Drizzle, migrations, indexes) | pending | — |
-| 03 | API server runtime (Express, health, bootstrap) | pending | — |
-| 04 | Authentication (Clerk, sessions, proxy) | pending | — |
-| 05 | Security & ACL (P0 fixes, upload claims) | pending | — |
-| 06 | Upload & media (S3/GCS, verify, claims) | pending | — |
-| 07 | Search, geo & maps (filters, clusters, near-me) | pending | — |
-| 08 | Billing, wallet & finance hub | pending | — |
-| 09 | Payments (Paymob/Stripe **structure only** — do not enable) | pending | — |
-| 10 | Mobile core UX & navigation | pending | — |
-| 11 | Mobile search performance & map WebView | pending | — |
-| 12 | Admin OS web (`artifacts/admin-os`) | pending | — |
-| 13 | Dealer OS web (`artifacts/dealer-os`) | pending | — |
-| 14 | Landing / consumer web (`artifacts/landing`) | pending | — |
-| 15 | CI/CD pipeline (GitHub Actions) | pending | — |
-| 16 | Docker & AWS deploy (`deploy/aws/`, root `Dockerfile`) | pending | — |
-| 17 | GCP deploy scaffold (`deploy/gcp/`) | pending | — |
-| 18 | Staging validation (P0 smoke, secrets) | pending | [WAVE-P0-STAGING-VALIDATION.md](../maintenance/WAVE-P0-STAGING-VALIDATION.md) |
-| 19 | EAS & store release (preview/production profiles) | pending | [EXPO-EAS-PRODUCTION-CHECKLIST.md](./EXPO-EAS-PRODUCTION-CHECKLIST.md) |
-| 20 | Observability & health probes | pending | [OBSERVABILITY-RUNBOOK.md](./OBSERVABILITY-RUNBOOK.md) |
-| 21 | RC sign-off & launch GO/NO-GO | **in_progress** | [RELEASE-CANDIDATE-FINAL.md](./RELEASE-CANDIDATE-FINAL.md) · [FULL-STRICT-AUDIT-REPORT.md](./FULL-STRICT-AUDIT-REPORT.md) |
+| 01 | Core architecture | **pass** | [PHASE-01-CORE-ARCHITECTURE.md](./PHASE-01-CORE-ARCHITECTURE.md) |
+| 02 | Database & schema | **pass_with_reservations** | [PHASE-02-DATABASE.md](./PHASE-02-DATABASE.md) |
+| 03 | API server runtime | **pass** | [PHASE-03-API-RUNTIME.md](./PHASE-03-API-RUNTIME.md) |
+| 04 | Authentication (Clerk) | **pass_with_reservations** | [PHASE-04-AUTH.md](./PHASE-04-AUTH.md) |
+| 05 | Security & ACL | **pass** | [PHASE-05-SECURITY.md](./PHASE-05-SECURITY.md) |
+| 06 | Upload & media | **pass_with_reservations** | [PHASE-06-MEDIA.md](./PHASE-06-MEDIA.md) |
+| 07 | Search, geo & maps | **pass** | [PHASE-07-SEARCH.md](./PHASE-07-SEARCH.md) |
+| 08 | Billing, wallet, chat, notifications | **pass_with_reservations** | [PHASE-08-BILLING-CHAT.md](./PHASE-08-BILLING-CHAT.md) |
+| 09 | Payments structure (Paymob off) | **pass** (enablement SKIP) | [PHASE-09-PAYMENTS.md](./PHASE-09-PAYMENTS.md) |
+| 10–11 | Mobile UX & search perf | **pass** | [PHASE-10-11-MOBILE.md](./PHASE-10-11-MOBILE.md) |
+| Marketplace | All verticals | **pass** | [PHASE-MARKETPLACE-SECTIONS.md](./PHASE-MARKETPLACE-SECTIONS.md) |
+| 12–14 | Admin / dealer / landing | **pass_with_reservations** | [PHASE-12-14-WEB.md](./PHASE-12-14-WEB.md) |
+| 15 | CI/CD | **pass_with_reservations** | [PHASE-15-CICD.md](./PHASE-15-CICD.md) |
+| 16–17 | Cloud (Replit+AWS+GCP) | **pass** | [PHASE-16-17-CLOUD.md](./PHASE-16-17-CLOUD.md) |
+| 18 | Staging validation | **blocked_ops** | [STAGING-REQUIRED-SECRETS.md](./STAGING-REQUIRED-SECRETS.md) · [STAGING-EAS-DEVICE-RUNBOOK.md](./STAGING-EAS-DEVICE-RUNBOOK.md) |
+| 19–20 | EAS / store + observability | **pass_with_reservations** | [PHASE-19-20-STORE-OBSERVABILITY.md](./PHASE-19-20-STORE-OBSERVABILITY.md) |
+| 21 | RC sign-off | **in_progress → freeze** | [RELEASE-CANDIDATE-FINAL.md](./RELEASE-CANDIDATE-FINAL.md) |
 
-**Status values:** `pending` · `in_progress` · `pass` · `pass_with_fixes` · `blocked`
+**Status values:** `pending` · `in_progress` · `pass` · `pass_with_reservations` · `blocked_ops` · `SKIP`
 
-**Next recommended phase:** **02 — Database & schema** (`lib/db`, `upload_claims`, Drizzle push on staging).
+**Next operator action:** supply secrets in STAGING-REQUIRED-SECRETS → Wave A smoke (Phase 18).
 
 ---
 
-## Seven launch pillars (cross-cutting)
+## Seven launch pillars
 
-See **[SEVEN-LAUNCH-PILLARS.md](./SEVEN-LAUNCH-PILLARS.md)** for pillar-level blockers and env-only gaps.
-
-| # | Pillar | Doc | Status |
-|---|--------|-----|--------|
-| 1 | Feature flags | [FEATURE-FLAGS.md](./FEATURE-FLAGS.md) | partial |
-| 2 | Data migration rollback | [MIGRATION-ROLLBACK-PLAYBOOK.md](./MIGRATION-ROLLBACK-PLAYBOOK.md) | partial |
-| 3 | Observability | [OBSERVABILITY-RUNBOOK.md](./OBSERVABILITY-RUNBOOK.md) | partial |
-| 4 | API versioning | [API-VERSIONING-POLICY.md](./API-VERSIONING-POLICY.md) | ready |
-| 5 | Backward compatibility | [BACKWARD-COMPATIBILITY.md](./BACKWARD-COMPATIBILITY.md) | ready |
-| 6 | Disaster recovery | [DISASTER-RECOVERY-VERIFICATION.md](./DISASTER-RECOVERY-VERIFICATION.md) | partial |
-| 7 | Release rollback | [RELEASE-ROLLBACK-PLAYBOOK.md](./RELEASE-ROLLBACK-PLAYBOOK.md) | partial |
+See **[SEVEN-LAUNCH-PILLARS.md](./SEVEN-LAUNCH-PILLARS.md)**.
 
 ---
 
-## Expo / EAS / monorepo quick refs
+## Local gate (no secrets)
 
-| Doc | Purpose |
-|-----|---------|
-| [MONOREPO-PACKAGE-GUIDE.md](./MONOREPO-PACKAGE-GUIDE.md) | pnpm workspace, Metro, Windows install |
-| [EXPO-EAS-PRODUCTION-CHECKLIST.md](./EXPO-EAS-PRODUCTION-CHECKLIST.md) | EAS pass/fail items |
-| [STAGING-EAS-DEVICE-RUNBOOK.md](./STAGING-EAS-DEVICE-RUNBOOK.md) | Staging → EAS preview → device QA |
-| [PHASE-LISTING-PUBLISH-LIFECYCLE.md](./PHASE-LISTING-PUBLISH-LIFECYCLE.md) | Publish safety verdict |
-
-Local gate (no secrets): `node scripts/production-confidence-check.mjs`
-
----
-
-## Related audit material
-
-| Area | Location |
-|------|----------|
-| Maintenance master plan | [`audit/maintenance/MASTER-MAINTENANCE-READINESS-PLAN.md`](../maintenance/MASTER-MAINTENANCE-READINESS-PLAN.md) |
-| RC-1 report | [`audit/rc1/BANCO-STORE-RELEASE-CANDIDATE-REPORT.md`](../rc1/BANCO-STORE-RELEASE-CANDIDATE-REPORT.md) |
-| PH-1 mobile hardening | [`audit/maintenance/WAVE-PH1-PRODUCTION-HARDENING.md`](../maintenance/WAVE-PH1-PRODUCTION-HARDENING.md) |
-| Live status | [`STATUS_REPORT.md`](../../STATUS_REPORT.md) |
-| AWS deploy | [`deploy/aws/reports/06-READINESS_CHECKLIST_GONOGO.md`](../../deploy/aws/reports/06-READINESS_CHECKLIST_GONOGO.md) |
-| GCP scaffold | [`deploy/gcp/README.md`](../../deploy/gcp/README.md) |
-| Website separation | [`audit/website/`](../website/) |
-
----
-
-## Staging-only actions (operator)
-
-1. `node scripts/staging-p0-smoke.mjs` with real `BANCO_API_URL` + Clerk tokens.
-2. `node scripts/verify-upload-claims-schema.mjs` against staging DB.
-3. Checklist in [DISASTER-RECOVERY-VERIFICATION.md](./DISASTER-RECOVERY-VERIFICATION.md).
-4. Confirm `ERROR_ALERT_WEBHOOK` receives a test alert (optional).
-5. Tag release and rehearse [RELEASE-ROLLBACK-PLAYBOOK.md](./RELEASE-ROLLBACK-PLAYBOOK.md) on staging.
-
-**Do not** run destructive DB restore or production rollback without an explicit ops window.
+`node scripts/production-confidence-check.mjs`  
+or `pnpm run confidence`

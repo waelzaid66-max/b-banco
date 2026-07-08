@@ -1,45 +1,74 @@
-﻿# Release candidate — final gate
+﻿# Release Candidate — Final (Release Freeze)
 
-**Date:** 2026-07-08 (strict audit pass)  
-**Branch:** `main` @ `a20d6fc`  
-**Theme:** Maintenance, deploy/launch documentation, mobile performance/resilience — **no listing publish algorithm changes**.  
-**Full report:** [FULL-STRICT-AUDIT-REPORT.md](./FULL-STRICT-AUDIT-REPORT.md)
+**Date:** 2026-07-08  
+**Branch:** `main`  
+**Mode:** **RELEASE FREEZE** — no new features; Critical/High only if proven.
+
+---
 
 ## Decision
 
-| Environment | Verdict | Notes |
-|-------------|---------|-------|
-| **Staging (EAS + staging API)** | **GO** | After user supplies staging secrets; run device runbook + publish smoke |
-| **Production store / prod API** | **CONDITIONAL NO-GO** | Requires production secrets, EAS prod profile sign-off, and staging publish smoke recorded |
+| Environment | Verdict | Why |
+|-------------|---------|-----|
+| **Code base / CI design** | **GO WITH FIXES** | Phases 01–17 & 19–20 closed by inspection; prior P0+waves complete |
+| **Staging** | **GO WHEN SECRETS PROVIDED** | Scripts + runbooks ready; execution blocked on operator secrets |
+| **Global production (stores)** | **NO-GO** until Phase 18 + EAS preview device + store secrets |
 
-**Overall RC:** **CONDITIONAL GO** — ship to **staging**; production requires human checklist completion below.
+**Overall:** **GO WITH FIXES** for engineering readiness · **NO-GO** for unsupervised world launch.
 
-## Checklist
+---
 
-| # | Item | Status |
+## What completed (this freeze wave)
+
+- Open-items backlog extracted and closed for all **DOCS/CODE** items reachable without secrets
+- PHASE reports 02–20 written (inspection; no feature work)
+- Marketplace sections readiness documented
+- `.gitignore` noise cleanup
+- `STAGING-REQUIRED-SECRETS.md` exact inventory (no fake values)
+- Produce proof: mobile tests path clarification; DB/API health code confirmed intact
+- Multi-cloud: Replit + AWS + GCP **retained**
+
+---
+
+## What remains (OPS / policy — not unfinished product code)
+
+| # | Item | Owner |
 |---|------|--------|
-| 1 | `pnpm install` lockfile consistent | CI `--frozen-lockfile`; local OK |
-| 2 | Mobile unit tests (`icons`, `lib-hardening`, `mobile-resilience`) | **PASS 23/23** (2026-07-08) |
-| 3 | `pnpm run typecheck` (all packages) | **PASS** (~17.5 min Windows) |
-| 4 | `pnpm run lint` | **PASS** |
-| 5 | `node scripts/production-confidence-check.mjs --skip-typecheck` | **PASS 10/10** |
-| 6 | CI workflow on GitHub Actions | **Verify** — `gh auth login` locally blocked |
-| 7 | API vitest (Postgres) | **CI only** — not run on Windows dev |
-| 8 | Listing publish smoke on staging device | **Human** — required |
-| 9 | Production GCP + EAS secrets not in repo | **User staging-only** |
-| 10 | `audit/rc1/*.log` excluded from release commit | Yes |
+| 1 | Staging API URL + Clerk JWTs → `staging-p0-smoke.mjs` | Operator |
+| 2 | `DATABASE_URL` → `verify-upload-claims-schema.mjs` | Operator |
+| 3 | Device listing publish smoke | Operator |
+| 4 | EAS login + preview/production builds + signing | Operator |
+| 5 | Confirm Actions green in browser/`gh` | Operator |
+| 6 | `ERROR_ALERT_WEBHOOK` live test (recommended) | Operator |
+| 7 | Apple/Google Sign-In / push provider config | Operator |
+| 8 | Paymob enable | Policy SKIP until B5 |
+| 9 | Consumer website build | Deferred SKIP |
 
-## Listing publish
+---
 
-See [PHASE-LISTING-PUBLISH-LIFECYCLE.md](./PHASE-LISTING-PUBLISH-LIFECYCLE.md) — **publish safe** for this diff scope.
+## Risks remaining
 
-## Blockers (production)
+| Risk | Severity | Mitigation |
+|------|----------|------------|
+| Staging never run | High for launch | Wave A secrets |
+| `ensureSchemaPatches` fails on target DB | High for media | Verify script |
+| Store build without `EXPO_PUBLIC_ROUTER_ORIGIN` | Medium | Checklist |
+| No DR drill | Medium ops | DISASTER-RECOVERY-VERIFICATION |
 
-- Real `EXPO_PUBLIC_*` / API URLs and auth secrets for production
-- EAS credentials and production build profile validation
-- Optional: full API vitest if api-server deploy planned same window
+---
 
-## Approvals
+## Release Freeze rules
 
-- Engineering: consolidation docs + CI path — automated pass pending tests
-- Product/Ops: staging publish smoke — pending
+1. No features / no cosmetic refactors  
+2. Fix only Critical/High regressions with proof  
+3. Minimal typecheck/tests for touched packages only  
+4. Full mono gate only after material multi-package change  
+
+---
+
+## Related
+
+- [OPEN-ITEMS-BACKLOG.md](./OPEN-ITEMS-BACKLOG.md)  
+- [STAGING-REQUIRED-SECRETS.md](./STAGING-REQUIRED-SECRETS.md)  
+- [FULL-READINESS-STATUS-PLAN.md](./FULL-READINESS-STATUS-PLAN.md)  
+- [PHASE-LISTING-PUBLISH-LIFECYCLE.md](./PHASE-LISTING-PUBLISH-LIFECYCLE.md) — **publish safe**

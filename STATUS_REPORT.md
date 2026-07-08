@@ -1,8 +1,8 @@
 # BANCO Store — Completion & Status Report
 
-_Last updated: 2026-07-08 — Pushed `main` @ `c37e1b6` (perf + expo + RC + website plans)._
+_Last updated: 2026-07-08 — Production readiness phases 02–20 inspection closed; HEAD includes `facd6fc`+ readiness docs._
 
-> **Release line:** `main` @ **`c37e1b6`** — **23 mobile regression tests** pass locally; CI expected green post-push.
+> **Release line:** `main` (see `git log -1`) — **23 mobile regression tests** via confidence script; phases index: `audit/production-readiness/README.md`. Staging smoke still **OPS** (secrets).
 
 This is the live status of the BANCO Store monorepo (Banco Mobile · Banco Admin · Banco Market/dealer-os · API Server · shared libs). It records what is **done and verified**, the **architecture**, and the **honest remaining items** with the reason each is or isn't locally verifiable.
 
