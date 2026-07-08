@@ -492,62 +492,46 @@ export default function FeedScreen() {
   );
 
   // Discovery rails — fetched once; independent of the category filter below.
+  // Trending, the shared pool, industrial slice, and geo city run in parallel
+  // so home rails don't waterfall three feed round-trips on cold open.
   const loadRails = useCallback(async () => {
-    try {
-      const res = await getTrending();
-      setTrendingItems(res.data ?? []);
-    } catch {
-      setTrendingItems([]);
-    }
-
-    try {
-      const res = await getFeed({ limit: 40, session_id: sessionId });
-      const pool = res.data ?? [];
-      setInstallmentItems(pool.filter((it) => !!it.installment_badge));
-      setVerifiedItems(pool.filter((it) => isVerifiedSignal(it.trust_signal)));
-
-      // Best Deals — lowest real cash price first (no fabricated discounts).
-      const ranked = pool
-        .map((it) => ({ it, value: parsePriceValue(it.price_display) }))
-        .filter(
-          (x): x is { it: FeedItem; value: number } => x.value !== null
-        )
-        .sort((a, b) => a.value - b.value)
-        .slice(0, 12)
-        .map((x) => x.it);
-      setBestDealsItems(ranked);
-
-      // Near You — real device city when location permission is already
-      // granted (native); otherwise listings from the dominant market city,
-      // honestly titled with that city name rather than claiming proximity.
-      const geoCity = await detectCity();
-      const refCity = geoCity ?? mostCommonLocation(pool);
-      setNearbyCity(geoCity ? null : refCity);
-      setNearYouItems(
-        refCity
-          ? pool.filter((it) => locationMatchesCity(it.location, refCity))
-          : []
-      );
-      setRecentlyAddedItems(pool.slice(0, 12));
-    } catch {
-      setInstallmentItems([]);
-      setVerifiedItems([]);
-      setBestDealsItems([]);
-      setNearYouItems([]);
-      setNearbyCity(null);
-      setRecentlyAddedItems([]);
-    }
-
-    try {
-      const res = await getFeed({
+    const [trendingRes, poolRes, industrialRes, geoCity] = await Promise.all([
+      getTrending().catch(() => ({ data: [] as FeedItem[] })),
+      getFeed({ limit: 40, session_id: sessionId }).catch(() => ({
+        data: [] as FeedItem[],
+      })),
+      getFeed({
         category: "industrial" as GetFeedCategory,
         limit: 20,
         session_id: sessionId,
-      });
-      setIndustrialItems(res.data ?? []);
-    } catch {
-      setIndustrialItems([]);
-    }
+      }).catch(() => ({ data: [] as FeedItem[] })),
+      detectCity().catch(() => null as string | null),
+    ]);
+
+    setTrendingItems(trendingRes.data ?? []);
+
+    const pool = poolRes.data ?? [];
+    setInstallmentItems(pool.filter((it) => !!it.installment_badge));
+    setVerifiedItems(pool.filter((it) => isVerifiedSignal(it.trust_signal)));
+
+    const ranked = pool
+      .map((it) => ({ it, value: parsePriceValue(it.price_display) }))
+      .filter((x): x is { it: FeedItem; value: number } => x.value !== null)
+      .sort((a, b) => a.value - b.value)
+      .slice(0, 12)
+      .map((x) => x.it);
+    setBestDealsItems(ranked);
+
+    const refCity = geoCity ?? mostCommonLocation(pool);
+    setNearbyCity(geoCity ? null : refCity);
+    setNearYouItems(
+      refCity
+        ? pool.filter((it) => locationMatchesCity(it.location, refCity))
+        : []
+    );
+    setRecentlyAddedItems(pool.slice(0, 12));
+
+    setIndustrialItems(industrialRes.data ?? []);
   }, [sessionId]);
 
   const loadRecommendations = useCallback(async () => {
@@ -840,7 +824,7 @@ export default function FeedScreen() {
     );
   };
 
-  const renderListHeader = () => {
+  const ListHeader = useCallback(() => {
     if (activeGroup) return renderIndustrialBridge();
     if (!showRails) return null;
     return (
@@ -949,7 +933,29 @@ export default function FeedScreen() {
         )}
       </View>
     );
-  };
+  }, [
+    activeGroup,
+    showRails,
+    recentlyViewed,
+    recommendedItems,
+    bestDealsItems,
+    installmentItems,
+    verifiedItems,
+    nearYouItems,
+    nearbyCity,
+    trendingItems,
+    recentlyAddedItems,
+    industrialItems,
+    hasRails,
+    items.length,
+    handleCardPress,
+    toggleSave,
+    isSaved,
+    handleCategoryChange,
+    colors,
+    isRTL,
+    t,
+  ]);
 
   const renderSkeletons = () => (
     <View style={{ paddingHorizontal: 16 }}>
@@ -1193,7 +1199,7 @@ export default function FeedScreen() {
           scrollEventThrottle={16}
           onViewableItemsChanged={handleViewableItemsChanged}
           viewabilityConfig={viewabilityConfig}
-          ListHeaderComponent={renderListHeader()}
+          ListHeaderComponent={ListHeader}
           refreshControl={
             <RefreshControl
               refreshing={refreshing}

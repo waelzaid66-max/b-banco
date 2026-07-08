@@ -9,7 +9,8 @@
     "typecheck:libs": "tsc --build",
     "typecheck": "pnpm run typecheck:libs && pnpm -r --filter \"./artifacts/**\" --filter \"./scripts\" --if-present run typecheck",
     "lint": "eslint scripts --max-warnings 0",
-    "lint:report": "eslint scripts artifacts/api-server/src lib/db/src"
+    "lint:report": "eslint scripts artifacts/api-server/src lib/db/src",
+    "confidence": "node scripts/production-confidence-check.mjs"
   },
   "private": true,
   "devDependencies": {
@@ -19,10 +20,5 @@
     "typescript": "~5.9.3",
     "typescript-eslint": "^8.63.0"
   },
-  "dependencies": {
-    "expo": "~54.0.35",
-    "expo-image": "~3.0.11",
-    "pnpm": "^11.9.0",
-    "vitest": "^4.1.8"
-  }
+  "dependencies": {}
 }

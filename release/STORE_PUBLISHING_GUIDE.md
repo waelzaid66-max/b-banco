@@ -34,11 +34,12 @@ CLERK_SECRET_KEY=sk_live_...
 PORT=(اللي المنصة بتحدده)
 OPENAI_API_KEY=... (المساعد الذكي)
 RESEND_API_KEY=... (الإيميلات)
-PAYMOB_... (لما الدفع يتفعّل)
+# PAYMOB_* — معطّل حتى تفعيل صريح
 
-# الموبايل (EAS env / eas.json)
+# الموبايل (EAS env — production environment)
 EXPO_PUBLIC_DOMAIN=api.yourdomain.com   ← دومين الـAPI الإنتاجي
 EXPO_PUBLIC_CLERK_PUBLISHABLE_KEY=pk_live_...
+EXPO_PUBLIC_ROUTER_ORIGIN=https://yourdomain.com   ← قبل بناء المتجر فقط
 
 # اللاندنج (روابط الصفحة الرسمية)
 VITE_MARKET_URL=https://market.yourdomain.com

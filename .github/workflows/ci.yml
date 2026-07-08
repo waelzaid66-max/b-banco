@@ -30,7 +30,7 @@ jobs:
         with:
           node-version: 24
           cache: pnpm
-      - run: pnpm install --no-frozen-lockfile
+      - run: pnpm install --frozen-lockfile
       - name: Typecheck (all packages)
         run: pnpm run typecheck
       - name: Build server + web apps
@@ -76,7 +76,7 @@ jobs:
         with:
           node-version: 24
           cache: pnpm
-      - run: pnpm install --no-frozen-lockfile
+      - run: pnpm install --frozen-lockfile
       - name: Enable pg_trgm extension
         run: |
           sudo apt-get update
@@ -103,7 +103,7 @@ jobs:
         with:
           node-version: 24
           cache: pnpm
-      - run: pnpm install --no-frozen-lockfile
+      - run: pnpm install --frozen-lockfile
       - name: Lint maintenance scripts
         run: pnpm run lint
 
@@ -117,7 +117,7 @@ jobs:
         with:
           node-version: 24
           cache: pnpm
-      - run: pnpm install --no-frozen-lockfile
+      - run: pnpm install --frozen-lockfile
       - name: Icons + lib + resilience guards
         run: >-
           pnpm --filter @workspace/banco-mobile run test:icons

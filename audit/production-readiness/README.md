@@ -58,3 +58,26 @@ Before promoting to production:
 5. Tag release (`v1.x.y`) and rehearse [RELEASE-ROLLBACK-PLAYBOOK.md](./RELEASE-ROLLBACK-PLAYBOOK.md) on staging.
 
 **Do not** run destructive DB restore or production rollback drills without an explicit ops window.
+
+## Consolidation index (2026-07-08)
+
+| Document | Purpose |
+|----------|---------|
+| [SEVEN-LAUNCH-PILLARS.md](./SEVEN-LAUNCH-PILLARS.md) | Launch pillars overview |
+| [PHASE-01-CORE-ARCHITECTURE.md](./PHASE-01-CORE-ARCHITECTURE.md) | Monorepo & deploy surfaces |
+| [PHASE-LISTING-PUBLISH-LIFECYCLE.md](./PHASE-LISTING-PUBLISH-LIFECYCLE.md) | Publish safety verdict |
+| [MONOREPO-PACKAGE-GUIDE.md](./MONOREPO-PACKAGE-GUIDE.md) | pnpm workspace alignment |
+| [EXPO-EAS-PRODUCTION-CHECKLIST.md](./EXPO-EAS-PRODUCTION-CHECKLIST.md) | EAS production |
+| [STAGING-EAS-DEVICE-RUNBOOK.md](./STAGING-EAS-DEVICE-RUNBOOK.md) | Staging device testing |
+| [MIGRATION-ROLLBACK-PLAYBOOK.md](./MIGRATION-ROLLBACK-PLAYBOOK.md) | DB migration rollback |
+| [OBSERVABILITY-RUNBOOK.md](./OBSERVABILITY-RUNBOOK.md) | Logs/metrics |
+| [API-VERSIONING-POLICY.md](./API-VERSIONING-POLICY.md) | API versioning |
+| [BACKWARD-COMPATIBILITY.md](./BACKWARD-COMPATIBILITY.md) | Client/API compat |
+| [DISASTER-RECOVERY-VERIFICATION.md](./DISASTER-RECOVERY-VERIFICATION.md) | DR checks |
+| [RELEASE-ROLLBACK-PLAYBOOK.md](./RELEASE-ROLLBACK-PLAYBOOK.md) | Release rollback |
+| [FEATURE-FLAGS.md](./FEATURE-FLAGS.md) | Feature flags |
+| [RELEASE-CANDIDATE-FINAL.md](./RELEASE-CANDIDATE-FINAL.md) | GO/NO-GO |
+
+**Confidence script:** `node scripts/production-confidence-check.mjs` from repo root.
+
+**Website:** see `../website/` checklists.

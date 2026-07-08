@@ -2,13 +2,28 @@
 /**
  * P0-4 staging smoke — upload byte-path + health probes.
  *
- * Usage:
- *   BANCO_API_URL=https://staging.example.com \
- *   CLERK_BEARER_TOKEN=eyJ... \
- *   CLERK_BEARER_TOKEN_OTHER=eyJ... \  # optional — step 7 IDOR
+ * Usage (PowerShell):
+ *   $env:BANCO_API_URL="https://staging.example.com"
+ *   $env:CLERK_BEARER_TOKEN="eyJ..."
+ *   $env:CLERK_BEARER_TOKEN_OTHER="eyJ..."   # optional — step 7 IDOR
  *   node scripts/staging-p0-smoke.mjs
  *
- * Exit 0 when all executed steps pass. Skips auth/upload steps when tokens are missing.
+ * Usage (bash):
+ *   BANCO_API_URL=https://staging.example.com \
+ *   CLERK_BEARER_TOKEN=eyJ... \
+ *   node scripts/staging-p0-smoke.mjs
+ *
+ * Environment variables:
+ *   BANCO_API_URL (required)     Staging API origin, no trailing slash
+ *   API_URL                      Alias for BANCO_API_URL
+ *   CLERK_BEARER_TOKEN           Clerk session JWT for upload steps 3–8
+ *   BEARER_TOKEN                 Alias for CLERK_BEARER_TOKEN
+ *   CLERK_BEARER_TOKEN_OTHER     Second user JWT for IDOR step 7 (optional)
+ *
+ * Exit codes:
+ *   0 — all executed steps passed (health-only OK when token missing)
+ *   1 — one or more steps failed
+ *   2 — BANCO_API_URL / API_URL not set
  */
 
 const API = (process.env.BANCO_API_URL || process.env.API_URL || "").replace(/\/$/, "");
@@ -22,6 +37,7 @@ const PNG_BYTES = Buffer.from(
 );
 
 const results = [];
+let skippedAuth = false;
 
 function fail(step, detail) {
   results.push({ step, ok: false, detail });
@@ -45,9 +61,24 @@ async function fetchJson(path, init = {}) {
   return { status: res.status, body, headers: res.headers };
 }
 
+function printEnvHelp() {
+  console.log(`
+Required:
+  BANCO_API_URL   staging API origin (e.g. https://api-staging.example.com)
+
+Optional (upload path steps 3–8):
+  CLERK_BEARER_TOKEN        primary user JWT
+  CLERK_BEARER_TOKEN_OTHER  second user JWT (IDOR check)
+
+After smoke, verify DB schema:
+  DATABASE_URL=postgresql://... node scripts/verify-upload-claims-schema.mjs
+`);
+}
+
 async function main() {
   if (!API) {
-    console.error("Set BANCO_API_URL (or API_URL) to the staging API origin.");
+    console.error("Set BANCO_API_URL (or API_URL) to the staging API origin.\n");
+    printEnvHelp();
     process.exit(2);
   }
 
@@ -71,7 +102,9 @@ async function main() {
   }
 
   if (!TOKEN) {
+    skippedAuth = true;
     console.warn("\n[WARN] CLERK_BEARER_TOKEN not set — skipping upload steps 3–8.");
+    printEnvHelp();
     summarize();
     return;
   }
@@ -163,7 +196,11 @@ async function main() {
 
 function summarize() {
   const failed = results.filter((r) => !r.ok);
-  console.log(`\n--- ${results.length - failed.length}/${results.length} passed ---`);
+  const passed = results.length - failed.length;
+  console.log(`\n--- ${passed}/${results.length} passed ---`);
+  if (skippedAuth) {
+    console.log("(Upload steps skipped — set CLERK_BEARER_TOKEN for full smoke.)");
+  }
   if (failed.length) process.exit(1);
 }
 

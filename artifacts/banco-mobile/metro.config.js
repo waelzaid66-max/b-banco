@@ -1,3 +1,18 @@
+const path = require("path");
 const { getDefaultConfig } = require("expo/metro-config");
 
-module.exports = getDefaultConfig(__dirname);
+const projectRoot = __dirname;
+const monorepoRoot = path.resolve(projectRoot, "../..");
+
+/** @type {import('expo/metro-config').MetroConfig} */
+const config = getDefaultConfig(projectRoot);
+
+// Resolve @workspace/* packages from the monorepo root during EAS + local dev.
+config.watchFolders = [monorepoRoot];
+config.resolver.nodeModulesPaths = [
+  path.resolve(projectRoot, "node_modules"),
+  path.resolve(monorepoRoot, "node_modules"),
+];
+config.resolver.disableHierarchicalLookup = true;
+
+module.exports = config;

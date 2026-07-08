@@ -20,6 +20,7 @@ The app reads these `EXPO_PUBLIC_*` vars at build time (see `app/_layout.tsx`):
 | `EXPO_PUBLIC_CLERK_PUBLISHABLE_KEY` | Clerk publishable key | ✅ |
 | `EXPO_PUBLIC_CLERK_PROXY_URL` | Clerk proxy (only if used) | optional |
 | `EXPO_PUBLIC_PUBLIC_APP_URL` | canonical web URL for share links | optional |
+| `EXPO_PUBLIC_ROUTER_ORIGIN` | deep-link origin for expo-router (production store builds only) | prod store |
 
 Set them in the EAS **production** environment (dashboard → Project → Environment
 variables, scope = production), or via CLI:
@@ -44,8 +45,10 @@ Open the APK URL on your phone → install → the app runs against the producti
 (real data, real auth). For iOS, `--platform ios` needs an Apple Developer account.
 
 ## Before store submission
-- Set `expo-router.origin` in `app.json` from `https://replit.com/` to the
-  production domain (deep‑link origin).
+- Set `EXPO_PUBLIC_ROUTER_ORIGIN` in the EAS **production** environment to your
+  canonical web domain (e.g. `https://banco.app`). Dev/preview builds omit it —
+  `app.config.ts` defaults to `https://replit.com/` so local Expo Go is unchanged.
 - Bump `versionCode` (Android) / set `buildNumber` (iOS) per release.
 - Backend secrets live server‑side (Replit): `OPENAI_API_KEY` (real `sk-...`),
-  `RESEND_API_KEY`, `PAYMOB_*`, Object Storage; Clerk dashboard: OTP + Google/Apple.
+  `RESEND_API_KEY`, Object Storage; Clerk dashboard: OTP + Google/Apple.
+  **Paymob remains disabled** until explicitly approved.

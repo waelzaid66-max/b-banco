@@ -34,6 +34,8 @@ export interface UseSearchMiniApp {
   commit: (next: SearchCriteria) => void;
   /** Merge a partial change into the current criteria and re-query from page 1. */
   update: (partial: Partial<SearchCriteria>) => void;
+  /** Merge criteria without triggering a fetch (e.g. facet normalization). */
+  applyPatch: (partial: Partial<SearchCriteria>) => void;
   /** Append the next page for the current criteria. */
   loadMore: () => void;
   /** Re-run the current criteria from page 1 (after an error). */
@@ -154,6 +156,12 @@ export function useSearchMiniApp(
     [runFetch],
   );
 
+  const applyPatch = useCallback((partial: Partial<SearchCriteria>) => {
+    const next = { ...criteriaRef.current, ...partial };
+    criteriaRef.current = next;
+    setCriteria(next);
+  }, []);
+
   const loadMore = useCallback(() => {
     void runFetch(criteriaRef.current, "more");
   }, [runFetch]);
@@ -184,6 +192,7 @@ export function useSearchMiniApp(
     viewState,
     commit,
     update,
+    applyPatch,
     loadMore,
     retry,
     reset,

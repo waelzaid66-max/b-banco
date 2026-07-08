@@ -5,6 +5,7 @@ import React, {
   useCallback,
   useContext,
   useEffect,
+  useMemo,
   useRef,
   useState,
 } from "react";
@@ -25,6 +26,7 @@ const RECENT_KEY = "banco_recently_viewed_v1";
 const RECENT_QUERIES_KEY = "banco_recent_queries_v1";
 const RECENT_QUERIES_MAX = 8;
 const RECENT_MAX = 20;
+const STORAGE_DEBOUNCE_MS = 400;
 
 export type SavedItem = FeedItem & { savedAt: number };
 
@@ -153,9 +155,38 @@ export function SessionProvider({ children }: { children: React.ReactNode }) {
     }
   }, []);
 
-  const persistSaves = useCallback((items: SavedItem[]) => {
-    AsyncStorage.setItem(SAVES_KEY, JSON.stringify(items)).catch(() => {});
+  const storageTimersRef = useRef<Map<string, ReturnType<typeof setTimeout>>>(
+    new Map(),
+  );
+  const scheduleStorageWrite = useCallback((key: string, json: string) => {
+    const timers = storageTimersRef.current;
+    const prev = timers.get(key);
+    if (prev) clearTimeout(prev);
+    timers.set(
+      key,
+      setTimeout(() => {
+        timers.delete(key);
+        AsyncStorage.setItem(key, json).catch(() => {});
+      }, STORAGE_DEBOUNCE_MS),
+    );
   }, []);
+
+  useEffect(
+    () => () => {
+      for (const timer of storageTimersRef.current.values()) {
+        clearTimeout(timer);
+      }
+      storageTimersRef.current.clear();
+    },
+    [],
+  );
+
+  const persistSaves = useCallback(
+    (items: SavedItem[]) => {
+      scheduleStorageWrite(SAVES_KEY, JSON.stringify(items));
+    },
+    [scheduleStorageWrite],
+  );
 
   // Initial load from the local cache (instant, works offline / for guests).
   useEffect(() => {
@@ -191,10 +222,10 @@ export function SessionProvider({ children }: { children: React.ReactNode }) {
         0,
         RECENT_QUERIES_MAX,
       );
-      AsyncStorage.setItem(RECENT_QUERIES_KEY, JSON.stringify(next)).catch(() => {});
+      scheduleStorageWrite(RECENT_QUERIES_KEY, JSON.stringify(next));
       return next;
     });
-  }, []);
+  }, [scheduleStorageWrite]);
 
   // When signed in, reconcile the local cache with the server-side saves.
   // Union semantics: push local-only saves up, pull (and enrich) server-only
@@ -320,20 +351,20 @@ export function SessionProvider({ children }: { children: React.ReactNode }) {
       setSavedSearches((prev) => {
         if (prev.some((s) => s.id === id)) return prev;
         const next = [...prev, { ...input, id, savedAt: Date.now() }];
-        AsyncStorage.setItem(SEARCHES_KEY, JSON.stringify(next)).catch(() => {});
+        scheduleStorageWrite(SEARCHES_KEY, JSON.stringify(next));
         return next;
       });
     },
-    [isSignedIn, requireAuth]
+    [isSignedIn, requireAuth, scheduleStorageWrite],
   );
 
   const removeSearch = useCallback((id: string) => {
     setSavedSearches((prev) => {
       const next = prev.filter((s) => s.id !== id);
-      AsyncStorage.setItem(SEARCHES_KEY, JSON.stringify(next)).catch(() => {});
+      scheduleStorageWrite(SEARCHES_KEY, JSON.stringify(next));
       return next;
     });
-  }, []);
+  }, [scheduleStorageWrite]);
 
   const recordView = useCallback((detail: ListingDetailData) => {
     const item = feedItemFromDetail(detail);
@@ -342,10 +373,10 @@ export function SessionProvider({ children }: { children: React.ReactNode }) {
         0,
         RECENT_MAX
       );
-      AsyncStorage.setItem(RECENT_KEY, JSON.stringify(next)).catch(() => {});
+      scheduleStorageWrite(RECENT_KEY, JSON.stringify(next));
       return next;
     });
-  }, []);
+  }, [scheduleStorageWrite]);
 
   const getCachedItem = useCallback(
     (id: string): FeedItem | null =>
@@ -356,27 +387,46 @@ export function SessionProvider({ children }: { children: React.ReactNode }) {
     [recentlyViewed, savedItems]
   );
 
+  const contextValue = useMemo(
+    () => ({
+      sessionId: SESSION_ID,
+      savedItems,
+      isSaved,
+      toggleSave,
+      savedSearches,
+      isSearchSaved,
+      saveSearch,
+      removeSearch,
+      recentlyViewed,
+      recordView,
+      recentQueries,
+      recordQuery,
+      getCachedItem,
+      cacheFeedItem,
+      listingsVersion,
+      bumpListings,
+    }),
+    [
+      savedItems,
+      isSaved,
+      toggleSave,
+      savedSearches,
+      isSearchSaved,
+      saveSearch,
+      removeSearch,
+      recentlyViewed,
+      recordView,
+      recentQueries,
+      recordQuery,
+      getCachedItem,
+      cacheFeedItem,
+      listingsVersion,
+      bumpListings,
+    ],
+  );
+
   return (
-    <SessionContext.Provider
-      value={{
-        sessionId: SESSION_ID,
-        savedItems,
-        isSaved,
-        toggleSave,
-        savedSearches,
-        isSearchSaved,
-        saveSearch,
-        removeSearch,
-        recentlyViewed,
-        recordView,
-        recentQueries,
-        recordQuery,
-        getCachedItem,
-        cacheFeedItem,
-        listingsVersion,
-        bumpListings,
-      }}
-    >
+    <SessionContext.Provider value={contextValue}>
       {children}
     </SessionContext.Provider>
   );

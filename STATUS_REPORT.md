@@ -1,8 +1,8 @@
 # BANCO Store — Completion & Status Report
 
-_Last updated: 2026-07-08 — Wave 4/5 parity (market rental taxonomy + near-me map/list)._
+_Last updated: 2026-07-08 — Production readiness: Expo/EAS checklist, monorepo guide, staging runbook, mobile performance pass._
 
-> **Release line:** `main` — **295 API tests / 3 skipped**, **23 mobile regression tests**, CI 4/4 green @ `fd9c981`+.
+> **Release line:** `main` — **295 API tests / 3 skipped**, **23 mobile regression tests**, CI 4/4 green @ `7cb7a1b`+.
 
 This is the live status of the BANCO Store monorepo (Banco Mobile · Banco Admin · Banco Market/dealer-os · API Server · shared libs). It records what is **done and verified**, the **architecture**, and the **honest remaining items** with the reason each is or isn't locally verifiable.
 
@@ -37,6 +37,8 @@ This is the live status of the BANCO Store monorepo (Banco Mobile · Banco Admin
 | **Production hardening PH-1** | Profile Payments → `/billing` hub; finance stack routes; notification deep-links guarded; `WAVE-P0-STAGING-VALIDATION.md` checklist. | `test:lib` + typecheck |
 | **Billing export B4** | Invoice PDF download + monthly CSV from `/billing`; API `…/invoices/{id}/pdf` + `…/report.csv`; OpenAPI/orval. | unit tests + `test:lib` |
 | **Wave 4/5 search parity** | Market-scoped rental chips (`searchTaxonomy`), near-me on FilterSheet + API/OpenAPI, map clusters honour radius | `searchParams`, `FilterSheet`, `SearchService.nearMeConditions` |
+| **Mobile performance (RC)** | Home rails: parallel `getTrending` + feed pool + industrial + geo (no waterfall). Map: 300ms viewport debounce + LRU cluster cache. Search: facet normalize via `applyPatch` + single retry; autocomplete seq guard; stable list header / card press. Session: debounced AsyncStorage + memoized provider value. | 23 mobile regression tests pass |
+| **Expo/EAS production readiness** | `app.config.ts` dynamic router origin; Metro monorepo; Android SDK 35 + adaptive icon; iOS privacy placeholders; `production-confidence-check.mjs`; staging runbook | `node scripts/production-confidence-check.mjs` |
 | **Health smoke (P0)** | Automated vitest for `GET /api/healthz`, `/api/livez`, `/api/readyz` (no Clerk). | `health.test.ts` |
 | **P0 staging tooling** | `scripts/staging-p0-smoke.mjs` (upload byte-path) + `scripts/verify-upload-claims-schema.mjs`. | run on staging with secrets |
 | **Search engines P1-8** | Ten facet-gated `property_type` chips; create taxonomy aligned (`commercial_land`, `warehouse`). | `test:lib` + i18n en/ar |

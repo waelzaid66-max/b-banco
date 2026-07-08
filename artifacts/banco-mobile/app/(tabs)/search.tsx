@@ -65,6 +65,7 @@ import { useSearchMiniApp } from "@/hooks/useSearchMiniApp";
 import {
   DEFAULT_CRITERIA,
   SearchCriteria,
+  hasActiveCriteria,
   type PaymentType,
   type SearchSort,
 } from "@/lib/searchParams";
@@ -227,7 +228,7 @@ export default function SearchScreen() {
   );
 
   const search = useSearchMiniApp(onCommitted);
-  const { criteria, items, viewState, phase, hasNext, commit, update, loadMore, retry } =
+  const { criteria, items, viewState, phase, hasNext, commit, update, applyPatch, loadMore, retry } =
     search;
 
   // Map view toggle. Only results that carry real coordinates are mappable, so
@@ -293,30 +294,36 @@ export default function SearchScreen() {
   );
   const showIndustrialChips =
     !facetsLoading && !!visibleIndTypes && visibleIndTypes.length > 1;
-  // If a refresh reveals the selected engine no longer has inventory, fall back
-  // to "all" so the committed criteria never references a vanished chip.
+  // If facets reveal the committed engine/sub-type no longer has inventory,
+  // normalize criteria once and re-query (single fetch, not two updates).
   useEffect(() => {
-    // Skip while facets load: requiresFacet chips fail closed during the load
-    // window, so resetting here would wipe a remembered selection on return.
     if (facetsLoading) return;
+    const patch: Partial<SearchCriteria> = {};
     if (
       criteria.engineKey !== "all" &&
       !engineList.some((e) => e.key === criteria.engineKey)
     ) {
-      update({ engineKey: "all" });
+      patch.engineKey = "all";
     }
-  }, [engineList, criteria.engineKey, update, facetsLoading]);
-
-  useEffect(() => {
-    if (facetsLoading) return;
     if (
       criteria.industrialType !== "all" &&
       visibleIndTypes &&
       !visibleIndTypes.includes(criteria.industrialType)
     ) {
-      update({ industrialType: "all" });
+      patch.industrialType = "all";
     }
-  }, [visibleIndTypes, criteria.industrialType, update, facetsLoading]);
+    if (Object.keys(patch).length === 0) return;
+    applyPatch(patch);
+    const next = { ...criteria, ...patch };
+    if (hasActiveCriteria(next)) retry();
+  }, [
+    engineList,
+    visibleIndTypes,
+    criteria,
+    applyPatch,
+    retry,
+    facetsLoading,
+  ]);
 
   // Live text input value (the only field that is debounced rather than
   // committed immediately). Price / year drafts live inside the FilterSheet.
@@ -340,15 +347,20 @@ export default function SearchScreen() {
     []
   );
 
+  const autocompleteSeq = useRef(0);
+
   const fetchAutocomplete = useCallback(async (q: string) => {
     if (q.length < 2) {
       setSuggestions([]);
       return;
     }
+    const seq = ++autocompleteSeq.current;
     try {
       const res = await getAutocomplete({ q });
+      if (seq !== autocompleteSeq.current) return;
       setSuggestions(res.data ?? []);
     } catch {
+      if (seq !== autocompleteSeq.current) return;
       setSuggestions([]);
     }
   }, []);
@@ -464,12 +476,14 @@ export default function SearchScreen() {
     commitQueryNow(s);
   };
 
-  const handleCardPress = (item: FeedItem) => {
-    // Guests are funneled into sign-up before any listing opens (Task #101).
-    if (!requireAuth()) return;
-    cacheFeedItem(item);
-    router.push(`/listing/${item.id}`);
-  };
+  const handleCardPress = useCallback(
+    (item: FeedItem) => {
+      if (!requireAuth()) return;
+      cacheFeedItem(item);
+      router.push(`/listing/${item.id}`);
+    },
+    [requireAuth, cacheFeedItem],
+  );
 
   const applySaved = useCallback(
     (s: SavedSearch) => {

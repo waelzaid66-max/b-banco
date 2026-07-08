@@ -18,6 +18,13 @@ import {
 } from "./mapHtml";
 import { MapOverlayChrome } from "./MapOverlayChrome";
 
+const CLUSTER_DEBOUNCE_MS = 300;
+const CLUSTER_CACHE_MAX = 24;
+
+function clusterCacheKey(criteriaSig: string, viewport: MapViewport): string {
+  return `${criteriaSig}:${viewport.north.toFixed(3)}:${viewport.south.toFixed(3)}:${viewport.east.toFixed(3)}:${viewport.west.toFixed(3)}:${viewport.zoom}`;
+}
+
 export interface SearchResultsMapProps {
   /** The loaded result page (callers filter to items with coordinates). */
   items: FeedItem[];
@@ -87,6 +94,17 @@ export function SearchResultsMap({
   // Previous mapped-set signature, to tell a pure filter change (map not reloaded)
   // apart from a result change (WebView re-keyed, which re-posts its viewport).
   const prevSigRef = useRef(sig);
+  const clusterCacheRef = useRef(
+    new Map<string, { clusters: MapClusterMarker[]; total: number }>(),
+  );
+  const debounceTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  useEffect(
+    () => () => {
+      if (debounceTimerRef.current) clearTimeout(debounceTimerRef.current);
+    },
+    [],
+  );
 
   // The WebView is keyed by `sig`, so a changed mapped-set reloads it — but this
   // component does not remount, so reset load/selection/count ourselves and
@@ -100,13 +118,23 @@ export function SearchResultsMap({
 
   const fetchClusters = useCallback(
     async (viewport: MapViewport) => {
+      const cacheKey = clusterCacheKey(criteriaSig, viewport);
+      const cached = clusterCacheRef.current.get(cacheKey);
+      if (cached) {
+        setServerTotal(cached.total);
+        webRef.current?.injectJavaScript(
+          `window.BANCO_MAP && window.BANCO_MAP.setClusters(${JSON.stringify(
+            cached.clusters,
+          )}); true;`,
+        );
+        return;
+      }
+
       const seq = ++vpSeqRef.current;
       try {
         const res = await getMapClusters(buildMapClusterParams(criteria, viewport));
         if (seq !== vpSeqRef.current) return;
         const clusters = res.data ?? [];
-        // Enrich single-listing pins with a price label when the listing is on
-        // the loaded page (best-effort; off-page singles fall back to a dot).
         const priceById = new Map(
           itemsRef.current.map((i) => [i.id, i.price_display]),
         );
@@ -123,7 +151,14 @@ export function SearchResultsMap({
           bookable:
             c.count === 1 && c.listing_id ? bookableById.has(c.listing_id) : false,
         }));
-        setServerTotal(clusters.reduce((sum, c) => sum + c.count, 0));
+        const total = clusters.reduce((sum, c) => sum + c.count, 0);
+        const cache = clusterCacheRef.current;
+        cache.set(cacheKey, { clusters: enriched, total });
+        if (cache.size > CLUSTER_CACHE_MAX) {
+          const oldest = cache.keys().next().value;
+          if (oldest !== undefined) cache.delete(oldest);
+        }
+        setServerTotal(total);
         webRef.current?.injectJavaScript(
           `window.BANCO_MAP && window.BANCO_MAP.setClusters(${JSON.stringify(
             enriched,
@@ -133,7 +168,18 @@ export function SearchResultsMap({
         // Leave the current markers in place; the map degrades to the loaded page.
       }
     },
-    [criteria],
+    [criteria, criteriaSig],
+  );
+
+  const scheduleFetchClusters = useCallback(
+    (viewport: MapViewport) => {
+      if (debounceTimerRef.current) clearTimeout(debounceTimerRef.current);
+      debounceTimerRef.current = setTimeout(() => {
+        debounceTimerRef.current = null;
+        void fetchClusters(viewport);
+      }, CLUSTER_DEBOUNCE_MS);
+    },
+    [fetchClusters],
   );
 
   // A pure filter change (values differ but the mapped set is byte-identical, so
@@ -146,7 +192,8 @@ export function SearchResultsMap({
     if (sigChanged) return;
     if (lastViewportRef.current) {
       setServerTotal(null);
-      void fetchClusters(lastViewportRef.current);
+      clusterCacheRef.current.clear();
+      scheduleFetchClusters(lastViewportRef.current);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [sig, criteriaSig]);
@@ -160,7 +207,7 @@ export function SearchResultsMap({
         } else if (msg.type === "viewport") {
           const vp = { ...msg.bounds, zoom: msg.zoom };
           lastViewportRef.current = vp;
-          void fetchClusters(vp);
+          scheduleFetchClusters(vp);
         } else if (msg.type === "select" && typeof msg.id === "string") {
           const hit = itemsRef.current.find((i) => i.id === msg.id);
           if (hit) setSelectedId(msg.id);
@@ -170,7 +217,7 @@ export function SearchResultsMap({
         // Ignore malformed bridge messages.
       }
     },
-    [fetchClusters, onOpenListingId],
+    [scheduleFetchClusters, onOpenListingId],
   );
 
   const selected = useMemo(
