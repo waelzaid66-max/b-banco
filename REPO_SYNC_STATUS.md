@@ -1,8 +1,8 @@
 # BANCO — حالة مزامنة الريبوهات (نسخة الإنتاج)
 
 **التاريخ:** 2026-07-08 (closure wave)  
-**HEAD على `main` (origin):** يُحدَّث بعد إكمال rebase/push هذه الموجة  
-**مرآات GitHub:** `b-banco` / `b.deals` / `B-OOM` @ `5fd9158` · **`aws-virgen`** — `./scripts/publish-aws-virgen-rc.sh`  
+**HEAD على `main` (origin):** `08a5256`  
+**مرآات GitHub:** `b-banco` / `b.deals` / `B-OOM` — sync to `08a5256` · **`aws-virgen`** — `./scripts/publish-aws-virgen-rc.sh`  
 **أداة دفع المرآات:** `scripts/push-mirror-remotes.sh`
 
 **آخر commit إصلاحات (هذه الموجة):** release-freeze — Windows preinstall، Universal Links env، ops secrets loader، 25 اختبار موبايل
@@ -29,10 +29,10 @@
 
 | الاسم | GitHub URL | دور | `main` @ |
 |-------|------------|-----|----------|
-| **origin** | `waelzaid66-max/-BANCO-CA-OOM-` | مصدر العمل | rebase pending |
-| **bbanco** | `waelzaid66-max/b-banco` | مرآة | `5fd9158` ✅ |
-| **bdeals** | `waelzaid66-max/b.deals` | deploy أصلي | `5fd9158` ✅ |
-| **boom** | `waelzaid66-max/B-OOM` | B-OOM | `5fd9158` ✅ |
+| **origin** | `waelzaid66-max/-BANCO-CA-OOM-` | مصدر العمل | `08a5256` ✅ |
+| **bbanco** | `waelzaid66-max/b-banco` | مرآة | sync → `08a5256` |
+| **bdeals** | `waelzaid66-max/b.deals` | deploy أصلي | sync → `08a5256` |
+| **boom** | `waelzaid66-max/B-OOM` | B-OOM | sync → `08a5256` |
 | **aws-virgen** | `waelzaid66-max/aws-virgen` | AWS EC2/CD | `./scripts/publish-aws-virgen-rc.sh` |
 | **upstream** (محلي) | `banco stor app/banco.store-main` | نسخة محلية | يدوي |
 
