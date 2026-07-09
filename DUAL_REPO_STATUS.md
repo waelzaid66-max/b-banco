@@ -14,7 +14,7 @@
 
 | الريبو | `main` | Tag |
 |--------|--------|-----|
-| **-BANCO-CA-OOM-** | `3a95afa` | `v1.0.0-rc.2` |
+| **-BANCO-CA-OOM-** | `69fc26d` (وثائق فقط؛ الكود المُختبَر @ `3a95afa`) | `v1.0.0-rc.2` |
 | **aws-virgen** | `39b1e63` (merge من الأساسي @ `3a95afa`) | `v1.0.0-rc.2` ✅ |
 
 ```bash
@@ -26,7 +26,17 @@ git fetch origin main && git rev-parse origin/main
 
 ## GitHub Actions CI — الأساسي (حقيقي من API)
 
-**آخر تشغيل على `main`:** Run **#49** — ✅ **success** (5/5 jobs)
+### ⚠️ حاجز تشغيل (ليس عيب كود)
+
+**Run #50** @ `69fc26d` — ❌ فشل خلال 4 ثوانٍ — **كل الـ jobs:**
+
+> *The job was not started because your account is locked due to a billing issue.*
+
+**الإجراء المطلوب من المالك:** [GitHub Billing](https://github.com/settings/billing) — سداد/تحديث طريقة الدفع ثم إعادة تشغيل Workflow أو دفع commit جديد.
+
+### آخر تشغيل ناجح على `main` (كود مُختبَر)
+
+Run **#49** @ `3a95afa` — ✅ **success** (5/5 jobs)
 
 | Job | الحالة |
 |-----|--------|
@@ -36,16 +46,30 @@ git fetch origin main && git rev-parse origin/main
 | GCP config gate | ✅ |
 | Mobile regression (static) | ✅ |
 
-**رابط مباشر:** https://github.com/waelzaid66-max/-BANCO-CA-OOM-/actions/runs/28979326703
+**رابط #49 (أخضر):** https://github.com/waelzaid66-max/-BANCO-CA-OOM-/actions/runs/28979326703  
+**رابط #50 (فوترة):** https://github.com/waelzaid66-max/-BANCO-CA-OOM-/actions/runs/29000838045
 
-### آخر فشل (قديم — مُصلَح)
+### آخر فشل **كود** (قديم — مُصلَح)
 
 | Run | SHA | السبب |
 |-----|-----|--------|
 | #40 | `38de1c0` | `pnpm-lock.yaml` ناقص `globals` بعد merge PR #2 |
 | **الإصلاح** | `eff3471`+ | sync lockfile + PR #5 GCP/handoff |
 
-> إذا رأيت ❌ أحمر في الواجهة: تأكد أنك تنظر إلى **آخر run على `main`** وليس Run #40 أو فرع PR قديم.
+> إذا رأيت ❌ أحمر: تحقق من **سبب الفشل** في Annotations — فوترة GitHub ≠ أخطاء ESLint/Tests. آخر فشل **كود** كان Run #40 (lockfile).
+
+---
+
+## حالة التحقق الحالية (2026-07-09)
+
+| المصدر | النتيجة |
+|--------|---------|
+| CI Run #49 @ `3a95afa` | ✅ 5/5 |
+| محلي: lint + typecheck | ✅ |
+| محلي: production-confidence | ✅ 13/13 |
+| محلي: GCP gate | ✅ |
+| aws-virgen `main` | ✅ `39b1e63` + tag `v1.0.0-rc.2` |
+| CI Run #50 @ `69fc26d` | ⛔ GitHub billing — unblock مطلوب |
 
 ---
 
