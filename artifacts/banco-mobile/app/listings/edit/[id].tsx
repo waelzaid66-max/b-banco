@@ -8,7 +8,7 @@ import {
 import { useQuery } from "@tanstack/react-query";
 import * as Haptics from "expo-haptics";
 import { router, useLocalSearchParams } from "expo-router";
-import { useEffect, useState, type ReactNode } from "react";
+import { useEffect, useRef, useState, type ReactNode } from "react";
 import {
   ActivityIndicator,
   Alert,
@@ -33,6 +33,10 @@ import {
 import { useI18n } from "@/context/LanguageContext";
 import { useSession } from "@/context/SessionContext";
 import { useColors } from "@/hooks/useColors";
+import {
+  ListingMediaEditor,
+  type ListingMediaEditorHandle,
+} from "@/components/listings/ListingMediaEditor";
 
 type PhoneEntry = { country: string; number: string };
 
@@ -89,6 +93,7 @@ export default function EditListingScreen() {
   const [whatsappEnabled, setWhatsappEnabled] = useState(false);
   const [phonePickerIdx, setPhonePickerIdx] = useState<number | null>(null);
   const [hydrated, setHydrated] = useState(false);
+  const mediaRef = useRef<ListingMediaEditorHandle>(null);
 
   useEffect(() => {
     if (!listing || hydrated) return;
@@ -173,6 +178,16 @@ export default function EditListingScreen() {
       toE164(p.number, countryByIso(p.country)),
     );
 
+    const media = mediaRef.current?.buildMediaPayload();
+    if (mediaRef.current?.hasPendingUploads()) {
+      Alert.alert(t("common.error"), t("create.errMediaNotReady"));
+      return;
+    }
+    if (media === null) {
+      Alert.alert(t("common.error"), t("create.errMinPhotos", { count: 2 }));
+      return;
+    }
+
     mutate({
       id,
       data: {
@@ -180,6 +195,7 @@ export default function EditListingScreen() {
         description: description.trim() || undefined,
         location: locationValue ?? location.trim(),
         ...(isRequest ? {} : { base_price_cash }),
+        media,
         specs: {
           contact_phones: cleanPhones,
           whatsapp_enabled: whatsappEnabled,
@@ -250,6 +266,13 @@ export default function EditListingScreen() {
           <AppText style={[styles.locked, { color: colors.mutedForeground, textAlign }]}>
             {t("editListing.lockedType")}
           </AppText>
+
+          <ListingMediaEditor
+            ref={mediaRef}
+            initialMedia={listing.media ?? []}
+            isRequest={isRequest}
+            testIdPrefix="edit-listing"
+          />
 
           <Field label={t("create.titleField")} colors={colors} isRTL={isRTL}>
             <TextInput

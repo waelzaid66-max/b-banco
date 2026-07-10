@@ -2764,6 +2764,8 @@ export type UpdateListingBodyLogistics = {
   shipping_method?: UpdateListingBodyLogisticsShippingMethod;
 };
 
+export type UpdateListingBodyMediaItem = CreateListingBodyMediaItem;
+
 export type UpdateListingBody = {
   title?: string;
   description?: string;
@@ -2774,6 +2776,8 @@ export type UpdateListingBody = {
   specs?: UpdateListingBodySpecs;
   /** Additive (Task #40). Optional logistics & delivery patch. All fields optional/nullable. */
   logistics?: UpdateListingBodyLogistics;
+  /** Replace listing media in seller order. Omit to leave photos unchanged. */
+  media?: UpdateListingBodyMediaItem[];
 };
 
 export type UpdateListing200Data = {

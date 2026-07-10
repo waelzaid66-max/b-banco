@@ -2,7 +2,15 @@
 
 Branch: `main` (was `fix/mobile-master-stabilize` — merged)
 
-### Wave 10 — media pipeline + home boot + assistant/notifications (2026-07-10)
+### Wave 10C — edit listing media + draft promoted URLs (2026-07-10)
+| Fix | Detail |
+|-----|--------|
+| API | `UpdateListingSchema.media[]` · replace `listing_media` in transaction |
+| Mobile edit | `ListingMediaEditor` · PATCH media from `edit/[id].tsx` |
+| Draft | `promotedMedia` persisted in `listingDraft.ts` + create restore |
+| Tests | lib-hardening **57/57** · `ListingService.update.test` media case |
+
+### Wave 10 — media pipeline + home boot + assistant/notifications (2026-07-10, `b2926a5`)
 | Fix | Detail |
 |-----|--------|
 | API | `listingMediaPreview.ts` — safe thumbnails in feed/search/detail/links |

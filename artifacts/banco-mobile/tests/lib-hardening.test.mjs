@@ -930,3 +930,48 @@ test("notifications — foreground push refreshes in-app feed query", () => {
   assert.match(push, /getListNotificationsQueryKey/);
   assert.match(push, /invalidateQueries/);
 });
+
+test("wave 10B — edit listing sends media patch via shared editor", () => {
+  const edit = fs.readFileSync(
+    path.join(APP_ROOT, "app", "listings", "edit", "[id].tsx"),
+    "utf8",
+  );
+  const editor = fs.readFileSync(
+    path.join(APP_ROOT, "components", "listings", "ListingMediaEditor.tsx"),
+    "utf8",
+  );
+  assert.match(edit, /ListingMediaEditor/);
+  assert.match(edit, /mediaRef\.current\?\.buildMediaPayload/);
+  assert.match(edit, /media,/);
+  assert.match(editor, /buildMediaPayload/);
+  assert.match(editor, /hasPendingUploads/);
+});
+
+test("wave 10B — updateListing API accepts media replacement", () => {
+  const api = fs.readFileSync(
+    path.join(REPO_ROOT, "artifacts", "api-server", "src", "services", "ListingService.ts"),
+    "utf8",
+  );
+  const schema = fs.readFileSync(
+    path.join(REPO_ROOT, "artifacts", "api-server", "src", "validators", "schemas.ts"),
+    "utf8",
+  );
+  assert.match(schema, /ListingMediaInputSchema/);
+  assert.match(schema, /media: z\.array\(ListingMediaInputSchema\)\.optional\(\)/);
+  assert.match(api, /updates\.media !== undefined/);
+  assert.match(api, /delete\(listingMedia\)/);
+});
+
+test("wave 10B — listing draft persists promoted remote media URLs", () => {
+  const draft = fs.readFileSync(
+    path.join(APP_ROOT, "lib", "listingDraft.ts"),
+    "utf8",
+  );
+  const create = fs.readFileSync(
+    path.join(APP_ROOT, "app", "listings", "create.tsx"),
+    "utf8",
+  );
+  assert.match(draft, /promotedMedia/);
+  assert.match(draft, /parsePromotedMedia/);
+  assert.match(create, /promotedMedia/);
+});

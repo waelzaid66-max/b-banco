@@ -4018,6 +4018,30 @@ paths:
                       type: string
                       enum: [container, bulk, air]
                       nullable: true
+                media:
+                  type: array
+                  description: >
+                    Replace listing media in seller order. Omit to leave photos
+                    unchanged. Sale listings must keep at least one item.
+                  items:
+                    type: object
+                    required: [type, url]
+                    properties:
+                      type:
+                        type: string
+                        enum: [image, video]
+                      url:
+                        type: string
+                        format: uri
+                      thumbnail_url:
+                        type: string
+                        format: uri
+                      is_thumbnail:
+                        type: boolean
+                      width:
+                        type: integer
+                      height:
+                        type: integer
       responses:
         "200":
           description: Updated

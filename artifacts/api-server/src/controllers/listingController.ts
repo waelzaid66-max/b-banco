@@ -111,6 +111,10 @@ export async function updateListingHandler(req: Request, res: Response) {
     const e = err as { code?: string; message?: string };
     if (e.code === "NOT_FOUND") return res.status(404).json(errorResponse("NOT_FOUND", e.message ?? "Not found"));
     if (e.code === "UNAUTHORIZED") return res.status(401).json(errorResponse("UNAUTHORIZED", e.message ?? "Unauthorized"));
+    if (e.code === "INVALID_DATA") return res.status(400).json(errorResponse("INVALID_DATA", e.message ?? "Invalid data"));
+    if (e.code === MEDIA_VERIFY_RETRYABLE) {
+      return res.status(503).json(errorResponse("INTERNAL_ERROR", e.message ?? "Storage verification temporarily unavailable. Please try again."));
+    }
     console.error("[Listing update]", err);
     return res.status(500).json(errorResponse("INTERNAL_ERROR", "Failed to update listing"));
   }

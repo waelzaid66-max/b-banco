@@ -1,8 +1,8 @@
 # NEXT OPS — Redeploy Replit from stabilize branch
 
 **Goal:** Make live API **FRESH** so Device QA / EAS claims are honest.  
-**Branch:** `main` @ `3b40782` (موجة 8: `5939849`)
-**Tip commit:** `3b40782` / ميزة موجة 8: `5939849`  
+**Branch:** `main` @ Wave 10C (بعد `b2926a5`)  
+**Tip commit:** Wave 10C — edit media PATCH + draft promotedMedia  
 **Repo:** `https://github.com/waelzaid66-max/-BANCO-CA-OOM-.git`
 
 **2026-07-10:** المضيف الحي **FRESH لموجة 6** (ISO + خريطة) لكن **STALE لموجة 8** — حقل `seller.social_links` غير موجود في JSON الحي. أعد النشر من `origin/main`.

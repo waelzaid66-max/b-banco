@@ -1326,6 +1326,16 @@ export const DealerLeadsQuerySchema = z.object({
 
 /* ── Listing CRUD schemas ───────────────────────────────── */
 
+/** Shared media item shape for create + update listing bodies. */
+export const ListingMediaInputSchema = z.object({
+  type: z.enum(["image", "video"]),
+  url: z.string().url(),
+  thumbnail_url: z.string().url().optional(),
+  is_thumbnail: z.boolean().default(false),
+  width: z.number().int().positive().optional(),
+  height: z.number().int().positive().optional(),
+});
+
 export const UpdateListingSchema = z
   .object({
     title: z.string().min(3).max(200).optional(),
@@ -1338,6 +1348,8 @@ export const UpdateListingSchema = z
     specs: z.record(z.unknown()).optional(),
     // Additive (Task #40): optional logistics & delivery patch.
     logistics: LogisticsInputSchema.optional(),
+    // Replace listing media in seller order. Sale listings must keep >=1 item.
+    media: z.array(ListingMediaInputSchema).optional(),
   })
   .refine((data) => Object.keys(data).length > 0, {
     message: "At least one field must be provided for update",

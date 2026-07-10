@@ -1,10 +1,10 @@
 import { describe, it, expect, afterAll, beforeAll } from "vitest";
-import { eq, inArray, isNotNull } from "drizzle-orm";
+import { eq, inArray, isNotNull, asc } from "drizzle-orm";
 import { createListing, updateListing } from "./ListingService";
 import { searchListings } from "./SearchService";
 import { CreateListingSchema } from "../validators/schemas";
 import { db, deleteUsers, uniq, randomUUID } from "../__tests__/helpers";
-import { listings, listingAttributes, users, locations } from "@workspace/db/schema";
+import { listings, listingAttributes, listingMedia, users, locations } from "@workspace/db/schema";
 
 /**
  * Edit-listing journey (update). Proves: owner-only authorization, that an edit
@@ -109,6 +109,36 @@ describe("ListingService.updateListing — edit journey", () => {
     await updateListing(id, ownerClerk, { status: "sold" });
     [row] = await db.select({ status: listings.status }).from(listings).where(eq(listings.id, id)).limit(1);
     expect(row!.status).toBe("sold");
+  });
+
+  it("replaces media when provided; cover stays the first image", async () => {
+    const ownerClerk = await seedOwner();
+    const token = uniq("MEDIA").toUpperCase();
+    const id = await mkListing(ownerClerk, token);
+
+    const newUrl = `https://cdn.example/${token}-new.jpg`;
+    await updateListing(id, ownerClerk, {
+      media: [
+        { type: "image", url: newUrl, is_thumbnail: true },
+        { type: "video", url: `https://cdn.example/${token}.mp4` },
+      ],
+    });
+
+    const rows = await db
+      .select({
+        url: listingMedia.url,
+        type: listingMedia.type,
+        isThumbnail: listingMedia.isThumbnail,
+        sortOrder: listingMedia.sortOrder,
+      })
+      .from(listingMedia)
+      .where(eq(listingMedia.listingId, id))
+      .orderBy(asc(listingMedia.sortOrder));
+
+    expect(rows).toHaveLength(2);
+    expect(rows[0]!.url).toBe(newUrl);
+    expect(rows[0]!.isThumbnail).toBe(true);
+    expect(rows[1]!.type).toBe("video");
   });
 
   it("pause (archived) hides from search; republish (active) restores it", async () => {

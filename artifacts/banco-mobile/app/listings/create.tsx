@@ -385,6 +385,29 @@ export default function CreateListingScreen() {
             (p) => p.mode === "seller_installment" || p.mode === "bank_finance",
           ) as PlanDraft[],
         );
+        if (d.promotedMedia?.length) {
+          const restored = d.promotedMedia.map((m) => ({
+            uri: m.url,
+            width: 800,
+            height: 600,
+            type: m.type === "video" ? ("video" as const) : ("image" as const),
+            mimeType: m.type === "video" ? "video/mp4" : "image/jpeg",
+          }));
+          setPhotos(restored);
+          setUploadState(
+            Object.fromEntries(
+              d.promotedMedia.map((m) => [
+                m.url,
+                {
+                  status: "uploaded" as const,
+                  progress: 1,
+                  url: m.url,
+                  type: m.type,
+                },
+              ]),
+            ),
+          );
+        }
       } catch {
         // a broken draft must never block creating a listing
       } finally {
@@ -400,6 +423,11 @@ export default function CreateListingScreen() {
   // on the success screen or mid-submit. Photos/upload state are intentionally out.
   useEffect(() => {
     if (!draftReady.current || done || submitting) return;
+    const promotedMedia = photos.flatMap((p) => {
+      const entry = uploadState[p.uri];
+      if (entry?.status !== "uploaded" || !entry.url || !entry.type) return [];
+      return [{ type: entry.type, url: entry.url }];
+    });
     const input: ListingDraftInput = {
       step,
       category,
@@ -418,6 +446,7 @@ export default function CreateListingScreen() {
       carOrigin,
       phones,
       plans,
+      ...(promotedMedia.length > 0 ? { promotedMedia } : {}),
     };
     if (!listingDraftHasContent(input)) return;
     const handle = setTimeout(() => {
@@ -442,6 +471,8 @@ export default function CreateListingScreen() {
     carOrigin,
     phones,
     plans,
+    photos,
+    uploadState,
     done,
     submitting,
   ]);

@@ -15,13 +15,15 @@
 | **المساعد الذكي** | مسارات wallet/billing/rentals/supply · industrial→facilities في البحث · thumbnails | ✅ محلي |
 | **الإشعارات** | deep-link موحّد · تحديث الشارة عند وصول push في المقدمة | ✅ محلي |
 | **خرائط الأقسام** | clusters من API · bookable فقط real_estate · مركز حسب السوق | ✅ محلي (موجود مسبقاً + مُتحقَّق) |
-| **QA جهاز + Replit** | wave 8 live · upload E2E · edit-listing media | ⏳ مفتوح |
+| **تعديل وسائط الإعلان** | PATCH `media[]` · `ListingMediaEditor` · مسودة `promotedMedia` | ✅ محلي |
+| **QA جهاز + Replit** | wave 8 live · upload E2E | ⏳ مفتوح |
 
 **اختبارات آخر تشغيل:**
 
 ```bash
-pnpm run ops:full-verify          # 17/17 + lib-hardening 54/54 + search-contract 37/37
+pnpm run ops:full-verify          # 17/17 + lib-hardening 57/57 + search-contract 37/37
 pnpm --filter @workspace/api-server test -- src/lib/listingMediaPreview.test.ts  # 4/4
+pnpm --filter @workspace/api-server test -- src/services/ListingService.update.test.ts
 ```
 
 ---
@@ -49,11 +51,31 @@ pnpm --filter @workspace/api-server test -- src/lib/listingMediaPreview.test.ts 
 | `app/listing/[id].tsx` | نفس المنطق عند الحفظ |
 | `lib/upload.ts` | `verifyUploadWithRetry()` مشترك |
 | `app/(tabs)/profile.tsx` | غلاف: إذن + verify + promote + i18n |
-| `app/listings/create.tsx` | استخدام verify المشترك |
+| `app/listings/create.tsx` | استخدام verify المشترك + حفظ `promotedMedia` في المسودة |
 
-### ما لم يُنفَّذ (Scope لاحق)
-- **تعديل صور/فيديو الإعلان** في `app/listings/edit/[id].tsx` (نص/اتصال فقط حالياً)
-- **حفظ صور المسودة** في `lib/listingDraft.ts`
+### ما بقي مفتوحاً (Scope لاحق)
+- **QA جهاز** لتعديل الوسائط بعد النشر
+- **Replit redeploy** + live probe
+
+---
+
+## 2b) تعديل وسائط الإعلان + مسودة (Wave 10C)
+
+### API
+| ملف | التغيير |
+|-----|---------|
+| `validators/schemas.ts` | `ListingMediaInputSchema` + `UpdateListingSchema.media[]` |
+| `ListingService.updateListing` | استبدال `listing_media` في transaction · promote للـ URLs الجديدة فقط |
+| `lib/api-spec/openapi.yaml` | PATCH body `media` |
+| `ListingService.update.test.ts` | اختبار استبدال الوسائط + cover |
+
+### Mobile
+| ملف | التغيير |
+|-----|---------|
+| `components/listings/ListingMediaEditor.tsx` | رفع/ترتيب/قص · hydrate من URLs موجودة |
+| `app/listings/edit/[id].tsx` | يرسل `media` مع PATCH |
+| `lib/listingDraft.ts` | `promotedMedia[]` — URLs بعيدة بعد verify |
+| `app/listings/create.tsx` | restore + persist للمسودة |
 
 ---
 
@@ -239,7 +261,9 @@ pnpm --filter @workspace/api-server test -- src/lib/listingMediaPreview.test.ts 
 - `lib/listingMedia.ts`, `lib/upload.ts`, `lib/marketPreference.ts`, `lib/behaviorSession.ts`
 - `context/SessionContext.tsx`
 - `app/(tabs)/index.tsx`, `profile.tsx`, `search.tsx`
-- `app/listing/[id].tsx`, `app/listings/create.tsx`
+- `app/listing/[id].tsx`, `app/listings/create.tsx`, `app/listings/edit/[id].tsx`
+- `components/listings/ListingMediaEditor.tsx`
+- `lib/listingDraft.ts`
 - `app/assistant.tsx`
 - `hooks/useSearchMiniApp.ts`, `hooks/usePushNotifications.tsx`
 - `constants/i18n.ts`
@@ -250,7 +274,7 @@ pnpm --filter @workspace/api-server test -- src/lib/listingMediaPreview.test.ts 
 
 ## 9) خطواتك التالية (بالترتيب)
 
-1. **Commit على main** (هذا ال wave) — راجع `git log -1`  
+1. **Commit على main** (Wave 10C) — `git log -1`  
 2. **Redeploy Replit** من `origin/main` → `node audit/mobile/scripts/post-redeploy-verify.mjs`  
 3. **EAS preview** + `audit/mobile/DEVICE-QA-SECTION-COMPANIES.md`  
 4. **`CLERK_BEARER_TOKEN`** → staging upload smoke إن متاح  
