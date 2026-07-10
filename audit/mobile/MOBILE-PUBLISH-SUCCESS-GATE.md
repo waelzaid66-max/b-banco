@@ -39,6 +39,8 @@
 
 ```
 [1] دمج/نشر فرع stabilize على الـ API الذي يخدم الموبايل
+        → دليل تنفيذي: NEXT-OPS-REPLIT-REDEPLOY.md
+        → فحص سريع: node audit/mobile/scripts/ops-next-step.mjs
         ↓
 [2] إعادة فحص Live: EG≠SA عند بيانات موسومة · map is_bookable/price · ISO سيء → 4xx
         ↓

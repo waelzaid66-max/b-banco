@@ -79,7 +79,12 @@ Docs: `SEARCH-BUTTON-ISOLATION.md`, `HONEST-INVENTORY-2026-07-10.md`
 | API DB vitest | Needs `DATABASE_URL` locally — pure gate test: `allowCommodityMaterialFilter.test.ts` |
 | search-contract bare `node --test` | Prefer `pnpm --filter @workspace/search-contract run test` (`tsx`) |
 
-**Canonical next steps for store success:** `MOBILE-PUBLISH-SUCCESS-GATE.md` (redeploy → smoke → EAS → device QA). Do not invent new code blockers.
+**Canonical next steps for store success:** `MOBILE-PUBLISH-SUCCESS-GATE.md` → **`NEXT-OPS-REPLIT-REDEPLOY.md`** (redeploy → smoke → EAS → device QA). Do not invent new code blockers.
+
+Quick status:
+```bash
+node audit/mobile/scripts/ops-next-step.mjs
+```
 
 ## Latest verification (automated)
 - `lib-hardening`: **21/21** (home feed now asserts `market_country` + hydrate)
