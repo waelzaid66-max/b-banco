@@ -6,8 +6,8 @@ Rules applied: no fake “all green”, no deleted account/section journeys, no 
 
 | Layer | Truth |
 |-------|--------|
-| Local branch code (M01–M31 + waves 6–9) | Present in workspace |
-| Automated tests offline | **PASS** — lib-hardening **54/54**, search-contract **37**, production-confidence **17/17** (--skip-typecheck) |
+| Local branch code (M01–M31 + waves 6–10C) | Present in workspace |
+| Automated tests offline | **PASS** — lib-hardening **57/57**, search-contract **37**, production-confidence **17/17** (--skip-typecheck) |
 | Live Replit wave 6 | **FRESH** — ISO reject + map `is_bookable`/`price_display` |
 | Live Replit wave 8 | **STALE** — `seller.social_links` not on live JSON |
 | Real-device DoD | **OPEN** until redeploy wave 8 + Expo/device QA |
@@ -38,9 +38,17 @@ Proof artifact: `audit/mobile/live-probes/2026-07-10-full-deploy-proof.json`
 
 **Deferred (not blockers):** map inside LocationPicker · per-hub maps · near-me web · persistent Potential state
 
+## Wave 10C (local code, `9818ac0`)
+
+| Item | Status |
+|------|--------|
+| Edit listing media (add/reorder/remove) | ✅ `ListingMediaEditor` + PATCH `media[]` |
+| Draft resume with promoted upload URLs | ✅ `promotedMedia` in `listingDraft.ts` |
+| Live Replit + device QA for edit media | ⏳ OPEN |
+
 ## Safe next (only if it improves)
 
-1. Redeploy Replit from `origin/main` → wave 8 FRESH.
+1. Redeploy Replit from `origin/main` @ `9818ac0` → wave 8+10C FRESH.
 2. `node audit/mobile/scripts/post-redeploy-verify.mjs` → exit 0.
 3. `CLERK_BEARER_TOKEN` → `staging-p0-smoke.mjs`.
 4. EAS preview + `DEVICE-QA-SECTION-COMPANIES.md`.
