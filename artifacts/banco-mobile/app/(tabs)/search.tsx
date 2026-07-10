@@ -256,12 +256,15 @@ export default function SearchScreen() {
       ),
     [items]
   );
-  const canMap = viewState === "results" && mappableItems.length > 0;
-  // Leaving results (or losing every mapped pin) drops back to the list so the
-  // map never lingers over a discover/loading/empty/error surface.
+  // Map chrome is available whenever results are showing. Page items may lack
+  // coordinates while GET /search/map still returns clusters for the same filters.
+  const inResultsView = viewState === "results";
+  const hasPagePins = mappableItems.length > 0;
+  const showMapChrome = inResultsView;
+  // Leaving results drops back to the list — never keep map over discover/empty/error.
   useEffect(() => {
-    if (!canMap && mapMode) setMapMode(false);
-  }, [canMap, mapMode]);
+    if (!inResultsView && mapMode) setMapMode(false);
+  }, [inResultsView, mapMode]);
 
   // Sticky map is a trap: ANY criteria change (fuel, material, years, price…)
   // returns to the list so each section's results stay the default surface.
@@ -281,20 +284,18 @@ export default function SearchScreen() {
   const [wantMap, setWantMap] = useState(false);
   useEffect(() => {
     if (!wantMap) return;
-    if (canMap) {
+    if (inResultsView) {
       setMapMode(true);
       setWantMap(false);
-    } else if (
-      viewState === "results" ||
-      viewState === "empty" ||
-      viewState === "error"
-    ) {
+      return;
+    }
+    if (viewState === "empty" || viewState === "error") {
       if (viewState !== "error") {
         Alert.alert(t("search.discover.exploreMap"), t("search.mapNoPins"));
       }
       setWantMap(false);
     }
-  }, [wantMap, canMap, viewState]);
+  }, [wantMap, inResultsView, viewState, t]);
 
   // Category chips are facet-gated: only categories with live inventory show.
   // Fails open while facets load; the active category is always kept visible.
@@ -1001,15 +1002,13 @@ export default function SearchScreen() {
             />
           </View>
         ) : null}
-        {showRentalTerms || activeGroup ? (
-          <MarketCountryButton
-            selected={criteria.marketCountry}
-            onPress={() => {
-              playSound("tap");
-              setMarketPickerOpen(true);
-            }}
-          />
-        ) : null}
+        <MarketCountryButton
+          selected={criteria.marketCountry}
+          onPress={() => {
+            playSound("tap");
+            setMarketPickerOpen(true);
+          }}
+        />
       </View>
       {showOriginChrome ? (
         <View style={[styles.originRow, { flexDirection: rowDir }]}>
@@ -1204,7 +1203,7 @@ export default function SearchScreen() {
           overlay={overlay}
         />
 
-        {mapMode && canMap ? (
+        {mapMode && inResultsView ? (
           <SearchResultsMap
             items={mappableItems}
             criteria={criteria}
@@ -1223,7 +1222,7 @@ export default function SearchScreen() {
           />
         ) : null}
 
-        {canMap ? (
+        {showMapChrome ? (
           <View
             style={[styles.mapToggleWrap, { bottom: insets.bottom + 80 }]}
             pointerEvents="box-none"
@@ -1250,7 +1249,9 @@ export default function SearchScreen() {
               <AppText style={[styles.mapToggleText, { color: colors.background }]}>
                 {mapMode
                   ? t("search.viewList")
-                  : `${t("search.viewMap")} (${mappableItems.length})`}
+                  : hasPagePins
+                    ? `${t("search.viewMap")} (${mappableItems.length})`
+                    : t("search.viewMap")}
               </AppText>
             </Pressable>
           </View>

@@ -28,6 +28,18 @@ const FONTS: Record<Lang, Record<Weight, string>> = {
 
 const STORAGE_KEY = "banco.lang";
 
+/** Web can read persisted lang synchronously; native still hydrates via AsyncStorage. */
+function readStoredLangSync(): Lang | null {
+  if (typeof window === "undefined") return null;
+  try {
+    const stored = window.localStorage.getItem(STORAGE_KEY);
+    if (stored === "ar" || stored === "en") return stored;
+  } catch {
+    // ignore — private mode / blocked storage
+  }
+  return null;
+}
+
 // Module-level snapshot of the active language so components rendered OUTSIDE
 // LanguageProvider (e.g. the ErrorBoundary fallback) can still localize their
 // text without the context. Kept in sync by the provider effect below.
@@ -64,10 +76,11 @@ function resolve(obj: unknown, path: string): unknown {
 }
 
 export function LanguageProvider({ children }: { children: React.ReactNode }) {
-  const [lang, setLangState] = useState<Lang>("en");
-  const [ready, setReady] = useState(false);
+  const [lang, setLangState] = useState<Lang>(() => readStoredLangSync() ?? "en");
+  const [ready, setReady] = useState(() => readStoredLangSync() !== null);
 
   useEffect(() => {
+    if (ready) return;
     (async () => {
       try {
         const stored = await AsyncStorage.getItem(STORAGE_KEY);
@@ -77,7 +90,7 @@ export function LanguageProvider({ children }: { children: React.ReactNode }) {
       }
       setReady(true);
     })();
-  }, []);
+  }, [ready]);
 
   useEffect(() => {
     currentLang = lang;
@@ -119,10 +132,11 @@ export function LanguageProvider({ children }: { children: React.ReactNode }) {
     };
   }, [lang, ready]);
 
+  // Avoid one-frame LTR→RTL flip (wrong font + mirrored layout) before hydration.
+  if (!ready) return null;
+
   return (
-    <LanguageContext.Provider value={value}>
-      {children}
-    </LanguageContext.Provider>
+    <LanguageContext.Provider value={value}>{children}</LanguageContext.Provider>
   );
 }
 

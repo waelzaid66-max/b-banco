@@ -69,6 +69,17 @@ Branch: `fix/mobile-master-stabilize`
 
 Docs: `SEARCH-BUTTON-ISOLATION.md`, `SECTION-ISOLATION-STRICT-2026-07-10.md`, `ARCHITECTURE-FILE-INDEX.md`
 
+### Wave 5 (user-truth pass — 2026-07-10)
+| Fix | Notes |
+|-----|-------|
+| Search map chrome | Toggle + map surface in **results** even when page items lack coordinates (cluster API) |
+| LanguageProvider | No tree render until lang hydrated; web sync read from localStorage |
+| Profile rental hub | Menu item always visible (was gated on bookable listings) |
+| **Profile overflow menu** | Touch-safe modal (backdrop sibling); fixes dead menu rows on device |
+| PromoteButton sheet | Same touch pattern (profile listing grid) |
+| Stack routes | `settings`, `business/verification`, `assistant` registered |
+| Doc | `MASTER-TRUTH-INVENTORY-AR.md`, `PROFILE-BUTTON-INVENTORY-AR.md` |
+
 ## Still open (honest)
 
 | ID | Why |

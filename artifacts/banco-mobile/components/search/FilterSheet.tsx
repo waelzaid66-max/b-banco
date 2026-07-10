@@ -30,6 +30,7 @@ import { engineByKey, type EngineDef } from "@/constants/engines";
 import { INDUSTRY_TYPES, MATERIAL_TYPES } from "@/constants/listingCreateTaxonomy";
 import { useI18n } from "@/context/LanguageContext";
 import { useColors } from "@/hooks/useColors";
+import { sectionAccent } from "@/lib/sectionTheme";
 import {
   rentalTermsForSearch,
   sanitizeRentalTermForMarket,
@@ -129,6 +130,7 @@ export function FilterSheet({
 
   const rowDir = isRTL ? "row-reverse" : "row";
   const textAlign = isRTL ? "right" : "left";
+  const chipAccent = sectionAccent(criteria.category);
 
   // Price / year are drafts: re-synced from the committed criteria each time the
   // sheet opens, then applied together on the Apply button.
@@ -282,6 +284,18 @@ export function FilterSheet({
               })}
             </ScrollView>
 
+            <SectionLabel
+              text={t("search.marketCountryTitle")}
+              align={textAlign}
+              colors={colors}
+            />
+            <View style={[styles.chipRow, { flexDirection: rowDir }]}>
+              <MarketCountryButton
+                selected={criteria.marketCountry}
+                onPress={() => setMarketPickerOpen(true)}
+              />
+            </View>
+
             {/* Category */}
             <SectionLabel text={t("search.category")} align={textAlign} colors={colors} />
             <ScrollView
@@ -299,7 +313,7 @@ export function FilterSheet({
                       styles.chip,
                       {
                         backgroundColor: active
-                          ? colors.primary
+                          ? chipAccent
                           : colors.secondary,
                         flexDirection: rowDir,
                         alignItems: "center",
@@ -340,6 +354,7 @@ export function FilterSheet({
                     engines={engines}
                     selected={criteria.engineKey}
                     onChange={onSelectEngine}
+                    accent={chipAccent}
                   />
                 </View>
               </>
@@ -457,6 +472,7 @@ export function FilterSheet({
                   onToggle={(v) => onUpdate({ fuelType: v })}
                   rowDir={rowDir}
                   colors={colors}
+                  accent={chipAccent}
                   testPrefix="filter-fuel"
                 />
 
@@ -469,6 +485,7 @@ export function FilterSheet({
                   onToggle={(v) => onUpdate({ transmission: v })}
                   rowDir={rowDir}
                   colors={colors}
+                  accent={chipAccent}
                   testPrefix="filter-transmission"
                 />
               </>
@@ -479,13 +496,6 @@ export function FilterSheet({
                 while the sale (تمليك) engine chip is active (rent-only content). */}
             {showRentalTerms && (
               <>
-                <SectionLabel text={t("create.fields.market")} align={textAlign} colors={colors} />
-                <View style={[styles.chipRow, { flexDirection: rowDir }]}>
-                  <MarketCountryButton
-                    selected={criteria.marketCountry}
-                    onPress={() => setMarketPickerOpen(true)}
-                  />
-                </View>
                 <SectionLabel text={t("create.fields.rentalTerm")} align={textAlign} colors={colors} />
                 <ToggleChipRow
                   options={rentalTerms.map((r) => r.value)}
@@ -502,6 +512,7 @@ export function FilterSheet({
                   }
                   rowDir={rowDir}
                   colors={colors}
+                  accent={chipAccent}
                   testPrefix="filter-rental-term"
                 />
               </>
@@ -529,6 +540,7 @@ export function FilterSheet({
                       onToggle={(v) => onUpdate({ industry: v })}
                       rowDir={rowDir}
                       colors={colors}
+                      accent={chipAccent}
                       testPrefix="filter-industry"
                     />
                   </>
@@ -551,6 +563,7 @@ export function FilterSheet({
                       onToggle={(v) => onUpdate({ material: v })}
                       rowDir={rowDir}
                       colors={colors}
+                      accent={chipAccent}
                       testPrefix="filter-material"
                     />
                   </>
@@ -566,6 +579,7 @@ export function FilterSheet({
                       onToggle={(v) => onUpdate({ originType: v })}
                       rowDir={rowDir}
                       colors={colors}
+                      accent={chipAccent}
                       testPrefix="filter-origin"
                     />
                   </>
@@ -783,6 +797,7 @@ function ToggleChipRow<T extends string>({
   rowDir,
   colors,
   testPrefix,
+  accent,
 }: {
   options: T[];
   selected: T | null;
@@ -791,7 +806,9 @@ function ToggleChipRow<T extends string>({
   rowDir: "row" | "row-reverse";
   colors: ReturnType<typeof useColors>;
   testPrefix: string;
+  accent?: string;
 }) {
+  const activeColor = accent ?? colors.primary;
   return (
     <ScrollView
       horizontal
@@ -806,7 +823,7 @@ function ToggleChipRow<T extends string>({
             onPress={() => onToggle(active ? null : v)}
             style={[
               styles.chip,
-              { backgroundColor: active ? colors.primary : colors.secondary },
+              { backgroundColor: active ? activeColor : colors.secondary },
             ]}
             testID={`${testPrefix}-${v}`}
           >

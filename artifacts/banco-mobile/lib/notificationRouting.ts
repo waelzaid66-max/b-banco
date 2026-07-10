@@ -19,7 +19,17 @@ export function routeForNotification(
   const d = (data ?? {}) as Record<string, unknown>;
 
   if (type === "message" && typeof d.conversation_id === "string") {
-    return { pathname: "/messages/[id]", params: { id: d.conversation_id } };
+    const params: { id: string; name?: string; listingId?: string; role?: string } = {
+      id: d.conversation_id,
+    };
+    if (typeof d.listing_id === "string") params.listingId = d.listing_id;
+    if (typeof d.counterparty_name === "string" && d.counterparty_name.trim()) {
+      params.name = d.counterparty_name.trim();
+    }
+    if (d.viewer_role === "buyer" || d.viewer_role === "seller") {
+      params.role = d.viewer_role;
+    }
+    return { pathname: "/messages/[id]", params };
   }
 
   if (type === "rfq" && typeof d.rfq_id === "string") {

@@ -56,7 +56,6 @@ import {
 } from "@/constants/countryCodes";
 import { useI18n } from "@/context/LanguageContext";
 import { useSession } from "@/context/SessionContext";
-import { filterBookableListings } from "@/lib/rentalHost";
 import { useColors } from "@/hooks/useColors";
 import { buildAvatarDataUri, uploadMediaAsset } from "@/lib/upload";
 
@@ -149,7 +148,10 @@ export default function ProfileScreen() {
   const [showPhotoRationale, setShowPhotoRationale] = useState(false);
   const [uploadingPhoto, setUploadingPhoto] = useState(false);
   const [agreedToTerms, setAgreedToTerms] = useState(false);
-  const [phone, setPhone] = useState("");
+  const [signupPhoneIso, setSignupPhoneIso] = useState("EG");
+  const [signupPhoneNumber, setSignupPhoneNumber] = useState("");
+  const [showSignupPhoneCountryPicker, setShowSignupPhoneCountryPicker] =
+    useState(false);
   const [accountType, setAccountType] = useState<"personal" | "business">(
     "personal"
   );
@@ -488,7 +490,9 @@ export default function ProfileScreen() {
     if (!firstName.trim() || !lastName.trim()) return;
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     consentPendingRef.current = true;
-    pendingPhoneRef.current = phone.trim();
+    pendingPhoneRef.current = signupPhoneNumber.trim()
+      ? toE164(signupPhoneNumber.trim(), countryByIso(signupPhoneIso))
+      : "";
     pendingBusinessRef.current = accountType === "business";
     pendingFirstNameRef.current = firstName.trim();
     pendingLastNameRef.current = lastName.trim();
@@ -612,7 +616,8 @@ export default function ProfileScreen() {
     setShowPassword(false);
     setShowNewPassword(false);
     setAgreedToTerms(false);
-    setPhone("");
+    setSignupPhoneIso("EG");
+    setSignupPhoneNumber("");
     setAccountType("personal");
     // Abandon any in-flight signup intent so a returning sign-in never
     // inherits a previous draft's consent, phone, name, or business routing.
@@ -864,8 +869,8 @@ export default function ProfileScreen() {
       });
     }
     const posts = listingsQuery.data?.data ?? [];
-    const hasBookableRentals = filterBookableListings(posts).length > 0;
-    const showRentalHub = hasBookableRentals || isBusiness;
+    // Host hub is a first-class journey — never hide behind bookable inventory.
+    const showRentalHub = true;
 
     const menuItems: {
       key: string;
@@ -1204,6 +1209,28 @@ export default function ProfileScreen() {
           {/* numberOfLines above: 3 lines reads like Instagram without pushing
               the trust row off-screen; tap opens the editor either way. */}
 
+          {meQuery.data?.data?.phone?.trim() ? (
+            <Pressable onPress={openEditProfile} testID="profile-phone">
+              <AppText
+                style={[
+                  styles.profilePhone,
+                  {
+                    color: colors.mutedForeground,
+                    textAlign: isRTL ? "right" : "left",
+                  },
+                ]}
+              >
+                {(() => {
+                  const parsed = parsePhone(meQuery.data?.data?.phone);
+                  const country = countryByIso(parsed.iso);
+                  return parsed.number
+                    ? `+${country.dial} ${parsed.number}`
+                    : meQuery.data?.data?.phone;
+                })()}
+              </AppText>
+            </Pressable>
+          ) : null}
+
           {meQuery.data?.data?.account_number && (
             <AppText
               style={[
@@ -1349,6 +1376,24 @@ export default function ProfileScreen() {
         </View>
 
         {/* Server-backed social links + edit */}
+        <View style={styles.socialSection}>
+          <View
+            style={[
+              styles.socialHeader,
+              { flexDirection: isRTL ? "row-reverse" : "row" },
+            ]}
+          >
+            <AppText style={[styles.socialTitle, { color: colors.foreground }]}>
+              {t("profile.socialLinks")}
+            </AppText>
+            {social.length === 0 ? (
+              <AppText
+                style={[styles.socialHint, { color: colors.mutedForeground }]}
+              >
+                {t("profile.addSocial")}
+              </AppText>
+            ) : null}
+          </View>
         <View
           style={[
             styles.socialRow,
@@ -1390,6 +1435,7 @@ export default function ProfileScreen() {
           >
             <Feather name="edit-2" size={15} color={colors.primary} />
           </Pressable>
+        </View>
         </View>
 
         {/* Instagram-style content tabs → REAL screens */}
@@ -2180,6 +2226,15 @@ export default function ProfileScreen() {
             setShowPhoneCountryPicker(false);
           }}
         />
+        <CountryCodePicker
+          visible={showSignupPhoneCountryPicker}
+          selectedIso={signupPhoneIso}
+          onClose={() => setShowSignupPhoneCountryPicker(false)}
+          onSelect={(iso) => {
+            setSignupPhoneIso(iso);
+            setShowSignupPhoneCountryPicker(false);
+          }}
+        />
 
         {/* Overflow menu → existing routes only */}
         <Modal
@@ -2188,16 +2243,17 @@ export default function ProfileScreen() {
           animationType="slide"
           onRequestClose={() => setShowMenu(false)}
         >
-          <Pressable
-            style={styles.menuBackdrop}
-            onPress={() => setShowMenu(false)}
-          >
+          <View style={styles.menuBackdrop}>
+            <Pressable
+              style={StyleSheet.absoluteFillObject}
+              onPress={() => setShowMenu(false)}
+              accessibilityRole="button"
+            />
             <View
               style={[
                 styles.menuSheet,
                 { backgroundColor: colors.card, borderColor: colors.border },
               ]}
-              onStartShouldSetResponder={() => true}
             >
               <View
                 style={[styles.menuHandle, { backgroundColor: colors.border }]}
@@ -2216,7 +2272,11 @@ export default function ProfileScreen() {
               {menuItems.map((mi) => (
                 <Pressable
                   key={mi.key}
-                  onPress={mi.onPress}
+                  onPress={() => {
+                    Haptics.selectionAsync();
+                    setShowMenu(false);
+                    mi.onPress();
+                  }}
                   style={[styles.menuItem, isRTL && styles.rowReverse]}
                   testID={`menu-${mi.key}`}
                 >
@@ -2246,7 +2306,7 @@ export default function ProfileScreen() {
                 </Pressable>
               ))}
             </View>
-          </Pressable>
+          </View>
         </Modal>
       </ScrollView>
     );
@@ -2669,16 +2729,74 @@ export default function ProfileScreen() {
 
       {mode === "signup" && (
         <View style={styles.field}>
-          <TextInput
-            value={phone}
-            onChangeText={setPhone}
-            placeholder={t("profile.phonePlaceholder")}
-            placeholderTextColor={colors.mutedForeground}
-            style={[inputStyle, { textAlign: isRTL ? "right" : "left" }]}
-            keyboardType="phone-pad"
-            autoCorrect={false}
-            testID="phone-input"
-          />
+          <AppText
+            style={[
+              styles.accountTypeLabel,
+              {
+                color: colors.mutedForeground,
+                textAlign: isRTL ? "right" : "left",
+              },
+            ]}
+          >
+            {t("profile.phoneLabel")}
+          </AppText>
+          <View
+            style={[
+              styles.editPhoneRow,
+              { flexDirection: isRTL ? "row-reverse" : "row" },
+            ]}
+          >
+            <Pressable
+              onPress={() => {
+                Haptics.selectionAsync();
+                setShowSignupPhoneCountryPicker(true);
+              }}
+              style={[
+                styles.editDialBtn,
+                {
+                  borderColor: colors.border,
+                  borderRadius: colors.radius,
+                  backgroundColor: colors.secondary,
+                  flexDirection: isRTL ? "row-reverse" : "row",
+                },
+              ]}
+              testID="signup-phone-country"
+            >
+              <AppText style={styles.editDialFlag}>
+                {countryByIso(signupPhoneIso).flag}
+              </AppText>
+              <AppText
+                style={[styles.editDialCode, { color: colors.foreground }]}
+              >
+                +{countryByIso(signupPhoneIso).dial}
+              </AppText>
+              <Feather
+                name="chevron-down"
+                size={16}
+                color={colors.mutedForeground}
+              />
+            </Pressable>
+            <TextInput
+              value={signupPhoneNumber}
+              onChangeText={setSignupPhoneNumber}
+              placeholder={countryByIso(signupPhoneIso).sample}
+              placeholderTextColor={colors.mutedForeground}
+              keyboardType="phone-pad"
+              autoCorrect={false}
+              style={[
+                styles.editInput,
+                styles.editPhoneInput,
+                {
+                  color: colors.foreground,
+                  backgroundColor: colors.secondary,
+                  borderColor: colors.border,
+                  borderRadius: colors.radius,
+                  textAlign: isRTL ? "right" : "left",
+                },
+              ]}
+              testID="phone-input"
+            />
+          </View>
         </View>
       )}
 
@@ -3298,9 +3416,32 @@ const styles = StyleSheet.create({
     marginTop: 4,
     letterSpacing: 0.5,
   },
+  profilePhone: {
+    fontSize: 14,
+    fontFamily: "Inter_500Medium",
+    marginTop: 8,
+  },
+  socialSection: {
+    marginBottom: 16,
+    gap: 8,
+  },
+  socialHeader: {
+    alignItems: "center",
+    justifyContent: "space-between",
+    gap: 8,
+  },
+  socialTitle: {
+    fontSize: 14,
+    fontFamily: "Inter_600SemiBold",
+  },
+  socialHint: {
+    fontSize: 12,
+    fontFamily: "Inter_400Regular",
+    flex: 1,
+    textAlign: "right",
+  },
   socialRow: {
     gap: 10,
-    marginBottom: 16,
   },
   socialBtn: {
     width: 42,

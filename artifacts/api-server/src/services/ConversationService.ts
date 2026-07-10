@@ -465,7 +465,12 @@ export async function sendMessage(
     type: "message",
     title: sender?.name ?? "New message",
     body: preview.length > 80 ? `${preview.slice(0, 79)}…` : preview,
-    data: { conversation_id: conversationId, listing_id: conv.listingId },
+    data: {
+      conversation_id: conversationId,
+      listing_id: conv.listingId,
+      counterparty_name: sender?.name ?? null,
+      viewer_role: isBuyer ? "seller" : "buyer",
+    },
   });
 
   // Resolve the reply preview + shared-listing card for the returned message so

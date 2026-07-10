@@ -81,6 +81,7 @@ import { useSession } from "@/context/SessionContext";
 import { useColors } from "@/hooks/useColors";
 import { DEFAULT_MARKET_COUNTRY } from "@/constants/listingCreateTaxonomy";
 import { loadPreferredMarketCountry } from "@/lib/marketPreference";
+import { sectionAccent } from "@/lib/sectionTheme";
 
 const PAGE_SIZE = 20;
 const SCROLL_SIGNAL_THROTTLE_MS = 3000;
@@ -273,7 +274,7 @@ function HeaderSpark() {
 export default function FeedScreen() {
   const colors = useColors();
   const insets = useSafeAreaInsets();
-  const { t, isRTL } = useI18n();
+  const { t, isRTL, ready: langReady } = useI18n();
   const { width: windowWidth } = useWindowDimensions();
   // Responsive grid (web only): native stays single-column full-width cards.
   // Wide screens fan the feed into 2–3 columns and cap+center the content so
@@ -319,6 +320,8 @@ export default function FeedScreen() {
   const [engineKey, setEngineKey] = useState<string>("all");
   // Same preferred market as Search/Create — scopes home feed inventory.
   const [marketCountry, setMarketCountry] = useState(DEFAULT_MARKET_COUNTRY);
+  const [marketReady, setMarketReady] = useState(false);
+  const prefsReady = langReady && marketReady;
   const [items, setItems] = useState<FeedItem[]>([]);
   const [cursor, setCursor] = useState<string | undefined>();
   const [hasNext, setHasNext] = useState(true);
@@ -559,7 +562,10 @@ export default function FeedScreen() {
   useEffect(() => {
     let cancelled = false;
     void loadPreferredMarketCountry().then((iso) => {
-      if (!cancelled) setMarketCountry(iso);
+      if (!cancelled) {
+        setMarketCountry(iso);
+        setMarketReady(true);
+      }
     });
     return () => {
       cancelled = true;
@@ -593,6 +599,7 @@ export default function FeedScreen() {
   // home tab never flashes an empty skeleton (search already preserves results).
   // Only the true first load (no items yet) uses the full-list skeleton.
   useEffect(() => {
+    if (!prefsReady) return;
     let cancelled = false;
     const isFirstPaint = items.length === 0;
     if (isFirstPaint) setLoading(true);
@@ -605,7 +612,7 @@ export default function FeedScreen() {
     return () => {
       cancelled = true;
     };
-  }, [category, industrialType, engineKey, marketCountry]);
+  }, [category, industrialType, engineKey, marketCountry, prefsReady]);
 
   const handleRetry = async () => {
     const isFirstPaint = items.length === 0;
@@ -1193,19 +1200,21 @@ export default function FeedScreen() {
                 types={visibleIndTypes!}
                 selected={industrialType}
                 onChange={setIndustrialType}
+                accent={sectionAccent(category)}
               />
             ) : (
               <EngineChips
                 engines={engineList}
                 selected={engineKey}
                 onChange={setEngineKey}
+                accent={sectionAccent(category)}
               />
             )}
           </View>
         </Animated.View>
       ) : null}
 
-      {loading ? (
+      {!prefsReady || (loading && items.length === 0) ? (
         renderSkeletons()
       ) : error && items.length === 0 ? (
         renderError()
@@ -1248,10 +1257,12 @@ export default function FeedScreen() {
         animationType="fade"
         onRequestClose={() => setShowLogoMenu(false)}
       >
-        <Pressable
-          style={styles.menuBackdrop}
-          onPress={() => setShowLogoMenu(false)}
-        >
+        <View style={styles.menuBackdrop}>
+          <Pressable
+            style={StyleSheet.absoluteFillObject}
+            onPress={() => setShowLogoMenu(false)}
+            accessibilityRole="button"
+          />
           <View
             style={[
               styles.menuSheet,
@@ -1261,7 +1272,6 @@ export default function FeedScreen() {
                 paddingBottom: insets.bottom + 12,
               },
             ]}
-            onStartShouldSetResponder={() => true}
           >
             <View style={styles.menuHandle} />
             <View
@@ -1313,7 +1323,7 @@ export default function FeedScreen() {
               </Pressable>
             ))}
           </View>
-        </Pressable>
+        </View>
       </Modal>
 
       <Modal
@@ -1322,10 +1332,12 @@ export default function FeedScreen() {
         animationType="fade"
         onRequestClose={() => setShowSortMenu(false)}
       >
-        <Pressable
-          style={styles.sortBackdrop}
-          onPress={() => setShowSortMenu(false)}
-        >
+        <View style={styles.sortBackdrop}>
+          <Pressable
+            style={StyleSheet.absoluteFillObject}
+            onPress={() => setShowSortMenu(false)}
+            accessibilityRole="button"
+          />
           <View
             style={[
               styles.sortSheet,
@@ -1336,7 +1348,6 @@ export default function FeedScreen() {
                 [isRTL ? "left" : "right"]: 16,
               },
             ]}
-            onStartShouldSetResponder={() => true}
           >
             <AppText
               style={[
@@ -1381,7 +1392,7 @@ export default function FeedScreen() {
               </Pressable>
             ))}
           </View>
-        </Pressable>
+        </View>
       </Modal>
     </View>
   );

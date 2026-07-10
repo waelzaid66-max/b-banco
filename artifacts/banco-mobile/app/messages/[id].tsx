@@ -386,8 +386,16 @@ export default function ThreadScreen() {
           <View
             style={[
               styles.quote,
+              isRTL
+                ? {
+                    borderRightWidth: 3,
+                    borderRightColor: mine ? colors.primaryForeground : colors.primary,
+                  }
+                : {
+                    borderLeftWidth: 3,
+                    borderLeftColor: mine ? colors.primaryForeground : colors.primary,
+                  },
               {
-                borderStartColor: mine ? colors.primaryForeground : colors.primary,
                 backgroundColor: mine ? "rgba(255,255,255,0.14)" : colors.background,
               },
             ]}
@@ -555,7 +563,6 @@ export default function ThreadScreen() {
                   : isRTL
                     ? "flex-end"
                     : "flex-start",
-                flexDirection: isRTL ? "row-reverse" : "row",
               },
             ]}
           >
@@ -777,10 +784,12 @@ export default function ThreadScreen() {
           <View
             style={[
               styles.replyBar,
+              isRTL
+                ? { borderRightWidth: 3, borderRightColor: colors.primary }
+                : { borderLeftWidth: 3, borderLeftColor: colors.primary },
               {
                 backgroundColor: colors.card,
                 borderTopColor: colors.border,
-                borderStartColor: colors.primary,
                 flexDirection: isRTL ? "row-reverse" : "row",
               },
             ]}
@@ -889,9 +898,6 @@ export default function ThreadScreen() {
               color={
                 !draft.trim() ? colors.mutedForeground : colors.primaryForeground
               }
-              // The paper-plane points toward the send direction — mirror it in RTL
-              // so it flies left in Arabic, matching WhatsApp/Messenger.
-              style={{ transform: [{ scaleX: isRTL ? -1 : 1 }] }}
             />
           </Pressable>
         </View>
@@ -951,7 +957,6 @@ export default function ThreadScreen() {
                   name="send"
                   size={16}
                   color={colors.primaryForeground}
-                  style={{ transform: [{ scaleX: isRTL ? -1 : 1 }] }}
                 />
                 <AppText
                   style={[
