@@ -79,6 +79,8 @@ Docs: `SEARCH-BUTTON-ISOLATION.md`, `SECTION-ISOLATION-STRICT-2026-07-10.md`, `A
 | PromoteButton sheet | Same touch pattern (profile listing grid) |
 | Stack routes | `settings`, `business/verification`, `assistant` registered |
 | AuthGate modal | Touch-safe backdrop (guest sign-up CTA no longer nested Pressable) |
+| Listing modals | Report / RFQ / Apply — touch-safe (no stopPropagation) |
+| FilterSheet sort | Section accent chips (not generic primary) |
 | Doc | `MASTER-TRUTH-INVENTORY-AR.md`, `PROFILE-BUTTON-INVENTORY-AR.md` |
 
 ## Still open (honest)

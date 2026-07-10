@@ -16,8 +16,8 @@
 
 | الريبو | الفرع | Tag |
 |--------|--------|-----|
-| **-BANCO-CA-OOM-** | `main` ← merge من `fix/mobile-master-stabilize` | `v1.1.0-stabilize-2026-07-10` |
-| **aws-virgen** | `main` (merge من الأساسي) | `v1.1.0-stabilize-2026-07-10` |
+| **-BANCO-CA-OOM-** | `main` ← merge من `fix/mobile-master-stabilize` | `v1.1.0-stabilize-2026-07-10` @ `7822215` |
+| **aws-virgen** | `main` (merge من الأساسي) | `v1.1.0-stabilize-2026-07-10` @ `99c486b` ✅ |
 
 ```bash
 git fetch origin main && git rev-parse origin/main
