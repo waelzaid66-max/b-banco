@@ -27,7 +27,7 @@
 | طبقة | الحالة | دليل |
 |------|--------|------|
 | كود محلي M01–M31 + أمان P0 | **CLOSED** | `MOBILE-STABILIZE-PROGRESS.md`, `audit/fixes/C-01…` |
-| اختبارات أوتوماتيك محلية | **PASS** حيث البيئة تسمح | `lib-hardening` 21/21، `proof-isolation` ok، CI mobile + universal-links |
+| اختبارات أوتوماتيك محلية | **PASS** (إعادة فحص عميق 2026-07-10) | `FULL-DEEP-VERIFICATION-2026-07-10.md` — mobile 34/34 · contract 33/33 · material 4/4 · proofs ok |
 | Live Replit API | **STALE** | `LIVE-DEPLOY-PROBE.md` — `market_country` / map bookable غير مطبّقة |
 | Device QA | **OPEN** | `DEVICE-QA-SECTION-COMPANIES.md` لم يُنفَّذ |
 | OPS O16 | **OPEN** | أسرار + smoke + EAS |

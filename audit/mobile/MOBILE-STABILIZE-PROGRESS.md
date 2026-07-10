@@ -86,11 +86,14 @@ Quick status:
 node audit/mobile/scripts/ops-next-step.mjs
 ```
 
-## Latest verification (automated)
-- `lib-hardening`: **21/21** (home feed now asserts `market_country` + hydrate)
-- `proof-create-fields.mjs`: **pass**
-- `proof-isolation.mjs`: **ok** (incl. M31 hub/feed/facet/home market)
-- `allowCommodityMaterialFilter.test.ts`: **4/4**
+## Latest verification (automated) — deep re-run 2026-07-10
+- Full report: `FULL-DEEP-VERIFICATION-2026-07-10.md`
+- Mobile `node --test`: **34/34**
+- `proof-isolation` / `proof-create-fields`: **ok**
+- search-contract: **33/33** (fixed stale `monthly`/facilities URL round-trip)
+- `allowCommodityMaterialFilter`: **4/4**
+- Live probe: **STALE** (exit 2)
+- Staging smoke default host: **404 dead**; schema verify: **ENOTFOUND**
 - CI `mobile-regression`: icons + lib + resilience + **universal-links**
 
 ## Reference folders
