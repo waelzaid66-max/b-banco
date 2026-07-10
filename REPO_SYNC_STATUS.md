@@ -5,7 +5,7 @@
 | Repo | Branch | Tag | SHA | Status |
 |------|--------|-----|-----|--------|
 | `-BANCO-CA-OOM-` | `main` | `v1.1.1-product-truth-2026-07-10` | `1aecea5` | ✅ pushed |
-| `aws-virgen` | `main` | `v1.1.1-product-truth-2026-07-10` | pending | ⏳ run publish script |
+| `aws-virgen` | `main` | `v1.1.1-product-truth-2026-07-10` | `f9acaf7` | ✅ synced |
 
 **Handoff:** `release/FULL-STABLE-SNAPSHOT-2026-07-10.md` · probe: `audit/mobile/live-probes/2026-07-10-wave6-fresh.json`
 

@@ -17,7 +17,7 @@
 | الريبو | الفرع | Tag | SHA |
 |--------|--------|-----|-----|
 | **-BANCO-CA-OOM-** | `main` | `v1.1.1-product-truth-2026-07-10` | `1aecea5` |
-| **aws-virgen** | `main` (مزامنة من الأساسي) | `v1.1.1-product-truth-2026-07-10` | ⏳ بعد `publish-aws-virgen-rc` |
+| **aws-virgen** | `main` | `v1.1.1-product-truth-2026-07-10` | `f9acaf7` ✅ |
 
 ```bash
 git fetch origin main && git rev-parse origin/main   # 1aecea5
