@@ -380,7 +380,7 @@ export const ListingMediaEditor = forwardRef<
       const media: UpdateListingBodyMediaItem[] = [];
       photos.forEach((p, i) => {
         const entry = uploadState[p.uri];
-        if (!entry?.url || !entry.type) return;
+        if (!entry || entry.status !== "uploaded") return;
         media.push({
           type: entry.type,
           url: entry.url,
