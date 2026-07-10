@@ -10,6 +10,7 @@ import { fileURLToPath } from "node:url";
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../../..");
 const base = process.argv[2] || "https://banco-ca-oom.replit.app";
 const probe = path.join(root, "audit/mobile/scripts/probe-live-deploy.mjs");
+const codeGate = path.join(root, "audit/mobile/scripts/pre-redeploy-code-gate.mjs");
 
 const hasSmokeSecrets = Boolean(
   process.env.BANCO_API_URL || process.env.API_URL,
@@ -28,6 +29,17 @@ if (!existsSync(probe)) {
   process.exit(1);
 }
 
+if (existsSync(codeGate)) {
+  const gate = spawnSync(process.execPath, [codeGate], { encoding: "utf8", cwd: root });
+  process.stdout.write(gate.stdout || "");
+  process.stderr.write(gate.stderr || "");
+  if (gate.status !== 0) {
+    console.error("\nFix branch code before redeploy.");
+    process.exit(1);
+  }
+  console.log("");
+}
+
 const result = spawnSync(process.execPath, [probe, base], {
   encoding: "utf8",
   cwd: root,
@@ -40,10 +52,12 @@ const fresh = result.status === 0;
 if (!fresh) {
   console.log(`
 NEXT (blocking) — paste on Replit Shell:
-  git fetch origin && git checkout fix/mobile-master-stabilize && git pull --ff-only
+  git fetch origin
+  git checkout fix/mobile-master-stabilize
+  git pull --ff-only origin fix/mobile-master-stabilize
   pnpm install --frozen-lockfile
   pnpm --filter @workspace/db run push-force
-  # Stop → Run api-server, then:
+  # Stop → Run api-server, then on your PC:
   node audit/mobile/scripts/post-redeploy-verify.mjs
 
 Full runbook: audit/mobile/NEXT-OPS-REPLIT-REDEPLOY.md

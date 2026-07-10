@@ -46,7 +46,7 @@ This is the live status of the BANCO Store monorepo (Banco Mobile · Banco Admin
 
 | Item | Status | Why it needs you |
 |---|---|---|
-| **API redeploy** | Live Replit **STALE** | Local has M23–M31; host does not until redeploy |
+| **API redeploy** | Live Replit **STALE** (code gate PASS @ `fe745f3`; probe fails until redeploy) | Run `pre-redeploy-code-gate` then Replit § `NEXT-OPS-REPLIT-REDEPLOY.md` |
 | **Image-upload byte path** | OPS | Object Storage + device |
 | **OTP / Google / Apple / GPS / Push / AI key** | OPS | Clerk + secrets |
 | **Staging P0 smoke + upload_claims table** | O16 OPEN | `STAGING-REQUIRED-SECRETS.md` |

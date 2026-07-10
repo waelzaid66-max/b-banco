@@ -31,7 +31,7 @@ On Replit Shell paste:
 
   git fetch origin
   git checkout fix/mobile-master-stabilize
-  git pull --ff-only
+  git pull --ff-only origin fix/mobile-master-stabilize
   pnpm install --frozen-lockfile
   pnpm --filter @workspace/db run push-force
   # Stop → Run api-server workflow
