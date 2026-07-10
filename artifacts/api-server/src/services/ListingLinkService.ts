@@ -8,6 +8,7 @@ import {
 } from "@workspace/db/schema";
 import { and, eq, inArray, or } from "drizzle-orm";
 import { publicVisibilityConditions } from "../lib/feedVisibility";
+import { pickListingThumbnailUrl, sortListingMedia } from "../lib/listingMediaPreview";
 import type { LinkedListing } from "../validators/schemas";
 
 type Relation = "feeds_into" | "part_of" | "compatible_with";
@@ -148,17 +149,25 @@ export async function getLinksForListing(listingId: string): Promise<LinkedListi
     db
       .select({
         listingId: listingMedia.listingId,
+        type: listingMedia.type,
         url: listingMedia.url,
+        thumbnail_url: listingMedia.thumbnailUrl,
         isThumbnail: listingMedia.isThumbnail,
+        sortOrder: listingMedia.sortOrder,
       })
       .from(listingMedia)
       .where(inArray(listingMedia.listingId, neighborIds)),
   ]);
 
-  const thumbByListing = new Map<string, string>();
+  const mediaByListing = new Map<string, typeof mediaRows>();
   for (const m of mediaRows) {
-    if (m.isThumbnail) thumbByListing.set(m.listingId, m.url);
-    else if (!thumbByListing.has(m.listingId)) thumbByListing.set(m.listingId, m.url);
+    if (!mediaByListing.has(m.listingId)) mediaByListing.set(m.listingId, []);
+    mediaByListing.get(m.listingId)!.push(m);
+  }
+  const thumbByListing = new Map<string, string>();
+  for (const [id, items] of mediaByListing) {
+    const url = pickListingThumbnailUrl(sortListingMedia(items));
+    if (url) thumbByListing.set(id, url);
   }
 
   const neighborById = new Map<string, (typeof neighborRows)[number]>();

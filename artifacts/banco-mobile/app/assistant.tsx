@@ -25,7 +25,7 @@ import { AppText } from "@/components/AppText";
 import { BancoLogo } from "@/components/BancoLogo";
 import { useI18n } from "@/context/LanguageContext";
 import { searchCriteriaToNavParams } from "@/lib/searchNavParams";
-import { DEFAULT_CRITERIA } from "@/lib/searchParams";
+import { DEFAULT_CRITERIA, type SearchCriteria } from "@/lib/searchParams";
 import { useColors } from "@/hooks/useColors";
 
 type ChatMessage = {
@@ -47,14 +47,32 @@ const SCREEN_ROUTES: Record<string, Href> = {
   messages: "/(tabs)/messages",
   my_listings: "/listings/mine",
   create_listing: "/listings/create",
+  wallet: "/wallet" as Href,
+  billing: "/billing" as Href,
   profile: "/(tabs)/profile",
   notifications: "/notifications",
   supply_hub: "/business/supply-hub",
   industry: "/industry",
   rentals: "/rentals/hub" as Href,
-  billing: "/billing" as Href,
   assistant: "/assistant",
 };
+
+function assistantSearchCategory(
+  raw: string | null | undefined,
+): SearchCriteria["category"] {
+  if (
+    raw === "car" ||
+    raw === "real_estate" ||
+    raw === "facilities" ||
+    raw === "materials" ||
+    raw === "all"
+  ) {
+    return raw;
+  }
+  // Server search tool still emits legacy `industrial`; mobile search UI uses facilities.
+  if (raw === "industrial") return "facilities";
+  return DEFAULT_CRITERIA.category;
+}
 
 export default function AssistantScreen() {
   const colors = useColors();
@@ -143,14 +161,7 @@ export default function AssistantScreen() {
       const params = searchCriteriaToNavParams({
         ...DEFAULT_CRITERIA,
         q: a.query ?? "",
-        category:
-          a.category === "car" ||
-          a.category === "real_estate" ||
-          a.category === "facilities" ||
-          a.category === "materials" ||
-          a.category === "all"
-            ? a.category
-            : DEFAULT_CRITERIA.category,
+        category: assistantSearchCategory(a.category),
         maxPrice: a.max_price != null ? String(a.max_price) : "",
         paymentType: a.has_installment ? "installment" : "any",
       });

@@ -67,6 +67,7 @@ import { useSession } from "@/context/SessionContext";
 import { useSound } from "@/context/SoundContext";
 import { useAuthGate } from "@/hooks/useAuthGate";
 import { useColors } from "@/hooks/useColors";
+import { pickListingPreviewUrl } from "@/lib/listingMedia";
 
 const { width: SCREEN_W } = Dimensions.get("window");
 const REPORT_REASON_KEYS = [
@@ -1617,7 +1618,7 @@ export default function ListingDetailScreen() {
           onSave={() => {
             const feedItem: FeedItem = {
               id: listing.id,
-              media_preview: listing.media?.[0]?.url ?? "",
+              media_preview: pickListingPreviewUrl(listing.media),
               price_display: listing.price_display,
               title: listing.title,
               location: listing.location,

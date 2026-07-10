@@ -3,7 +3,6 @@ import { Feather, Ionicons } from "@/components/icons";
 import { AppTextInput as TextInput } from "@/components/AppTextInput";
 import {
   createListing,
-  verifyUpload,
   useGetMe,
   getGetMeQueryKey,
   useGetMySubscription,
@@ -38,6 +37,7 @@ import {
   buildResolvedMedia,
   uploadResolvedMedia,
   uploadErrorMessageKey,
+  verifyUploadWithRetry,
 } from "@/lib/upload";
 import {
   MAX_MEDIA,
@@ -481,26 +481,9 @@ export default function CreateListingScreen() {
       prev.map((p, i) => (i === index ? { ...p, ...patch } : p)),
     );
 
-  // Verify the stored object is readable before marking a tile done. The verify
-  // endpoint returns 503 while storage metadata is still settling (read-after-
-  // write lag); treat that as transient and retry a few times. Any other error
-  // is permanent and propagates to mark the upload failed.
-  const verifyWithRetry = async (url: string, signal: AbortSignal) => {
-    for (let attempt = 1; attempt <= 4; attempt += 1) {
-      if (signal.aborted) return;
-      try {
-        await verifyUpload({ url });
-        return;
-      } catch (e) {
-        const status = (e as { status?: number } | null)?.status;
-        if (status === 503 && attempt < 4) {
-          await new Promise((r) => setTimeout(r, 700 * attempt));
-          continue;
-        }
-        throw e;
-      }
-    }
-  };
+  // Verify the stored object is readable before marking a tile done (shared helper).
+  const verifyWithRetry = async (url: string, signal: AbortSignal) =>
+    verifyUploadWithRetry(url, { signal });
 
   // Per-asset upload state machine: uploading(progress) -> verifying -> uploaded
   // | failed. Media uploads the moment it's added so publishing is instant, the

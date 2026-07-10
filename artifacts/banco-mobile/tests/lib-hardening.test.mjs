@@ -608,10 +608,47 @@ test("home feed refetches when preferred market hydrates", () => {
   );
   assert.match(
     home,
-    /\[category,\s*industrialType,\s*engineKey,\s*marketCountry,\s*prefsReady\]/,
-    "home feed effect must wait for prefs then depend on marketCountry",
+    /\[category,\s*industrialType,\s*engineKey,\s*marketCountry,\s*bootReady\]/,
+    "home feed effect must wait for bootReady then depend on marketCountry",
   );
-  assert.match(home, /prefsReady/, "home must gate first paint on language + market prefs");
+  assert.match(home, /bootReady/, "home must gate boot on language + market + session");
+  assert.match(
+    home,
+    /loadRails,\s*bootReady\]/,
+    "discovery rails must wait for bootReady (same market as main feed)",
+  );
+  assert.match(
+    home,
+    /feedRequestGenRef|railsRequestGenRef/,
+    "home must invalidate stale in-flight feed/rail responses",
+  );
+  assert.match(
+    home,
+    /clerkUserLoaded/,
+    "logo menu must wait for Clerk user before role-specific rows",
+  );
+});
+
+test("behavior session id persists across reloads", () => {
+  const session = fs.readFileSync(
+    path.join(APP_ROOT, "context", "SessionContext.tsx"),
+    "utf8",
+  );
+  assert.match(session, /loadOrCreateBehaviorSessionId/);
+  assert.match(session, /sessionReady/);
+  const behavior = fs.readFileSync(
+    path.join(APP_ROOT, "lib", "behaviorSession.ts"),
+    "utf8",
+  );
+  assert.match(behavior, /readBehaviorSessionIdSync/);
+});
+
+test("search seeds market from sync read on first paint", () => {
+  const hook = fs.readFileSync(
+    path.join(APP_ROOT, "hooks", "useSearchMiniApp.ts"),
+    "utf8",
+  );
+  assert.match(hook, /readPreferredMarketCountrySync/);
 });
 
 test("message thread gates guests before fetching or composing", () => {
@@ -837,4 +874,59 @@ test("wave 9 — web map bookable chrome gated to real_estate only", () => {
     /criteria\.category\s*===\s*"real_estate"/,
     "web map must gate bookable pin chrome to real_estate",
   );
+});
+
+test("media — profile cover uses rationale + verify before promote", () => {
+  const profile = fs.readFileSync(PROFILE, "utf8");
+  assert.match(profile, /showCoverRationale/, "cover picker must show disclosure modal");
+  assert.match(profile, /verifyUploadWithRetry/, "cover upload must verify storage before promote");
+  assert.match(profile, /uploadErrorMessageKey/, "cover failures must map to upload i18n keys");
+});
+
+test("media — client preview URL never uses raw media[0]", () => {
+  const session = fs.readFileSync(
+    path.join(APP_ROOT, "context", "SessionContext.tsx"),
+    "utf8",
+  );
+  const detail = fs.readFileSync(path.join(APP_ROOT, "app", "listing", "[id].tsx"), "utf8");
+  assert.match(session, /pickListingPreviewUrl/, "SessionContext must pick image-safe preview");
+  assert.match(detail, /pickListingPreviewUrl/, "listing detail save must pick image-safe preview");
+  assert.doesNotMatch(session, /media\?\.\[0\]\?\.url/, "SessionContext must not use media[0] URL");
+});
+
+test("media — server feed thumbnail helper is wired in SearchService", () => {
+  const search = fs.readFileSync(
+    path.join(REPO_ROOT, "artifacts", "api-server", "src", "services", "SearchService.ts"),
+    "utf8",
+  );
+  assert.match(search, /pickListingThumbnailUrl/, "enrichListings must use shared thumbnail picker");
+  assert.match(search, /sortListingMedia/, "enrichListings must sort media before thumbnail pick");
+});
+
+test("assistant — industrial search maps to facilities + wallet/billing routes", () => {
+  const assistant = fs.readFileSync(
+    path.join(APP_ROOT, "app", "assistant.tsx"),
+    "utf8",
+  );
+  assert.match(assistant, /assistantSearchCategory/);
+  assert.match(assistant, /raw === "industrial"/);
+  assert.match(assistant, /wallet:/);
+  assert.match(assistant, /billing:/);
+  const aiService = fs.readFileSync(
+    path.join(REPO_ROOT, "artifacts", "api-server", "src", "services", "AiAssistantService.ts"),
+    "utf8",
+  );
+  assert.match(aiService, /"billing"/);
+  assert.match(aiService, /"rentals"/);
+  assert.match(aiService, /"supply_hub"/);
+});
+
+test("notifications — foreground push refreshes in-app feed query", () => {
+  const push = fs.readFileSync(
+    path.join(APP_ROOT, "hooks", "usePushNotifications.tsx"),
+    "utf8",
+  );
+  assert.match(push, /addNotificationReceivedListener/);
+  assert.match(push, /getListNotificationsQueryKey/);
+  assert.match(push, /invalidateQueries/);
 });

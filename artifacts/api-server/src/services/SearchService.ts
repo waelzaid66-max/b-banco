@@ -8,6 +8,10 @@ import { CircuitBreaker } from "../lib/circuitBreaker";
 import { publicVisibilityConditions } from "../lib/feedVisibility";
 import type { FeedItem, FacetCounts } from "../validators/schemas";
 import { allowCommodityMaterialFilter } from "./allowCommodityMaterialFilter";
+import {
+  pickListingThumbnailUrl,
+  sortListingMedia,
+} from "../lib/listingMediaPreview";
 
 export { allowCommodityMaterialFilter } from "./allowCommodityMaterialFilter";
 
@@ -1004,6 +1008,9 @@ export async function enrichListings(
     if (!mediaByListing.has(m.listingId)) mediaByListing.set(m.listingId, []);
     mediaByListing.get(m.listingId)!.push(m);
   }
+  for (const [listingId, items] of mediaByListing) {
+    mediaByListing.set(listingId, sortListingMedia(items));
+  }
   for (const p of paymentRows) {
     if (!paymentByListing.has(p.listingId)) paymentByListing.set(p.listingId, []);
     paymentByListing.get(p.listingId)!.push(p);
@@ -1031,14 +1038,6 @@ export async function enrichListings(
     const payments = paymentByListing.get(row.id) ?? [];
     const interaction = interactionByListing.get(row.id);
 
-    // The feed renders thumbnail_url in an <Image> and a null thumbnail drops the
-    // listing entirely, so the cover must be an IMAGE. Prefer the flagged
-    // thumbnail, then fall back to the first image (never a leading video), and
-    // only as a last resort the first media item.
-    const thumbnail =
-      media.find((m) => m.isThumbnail) ??
-      media.find((m) => m.type === "image") ??
-      media[0];
     const hasVideo = media.some((m) => m.type === "video");
     const offers = computeOffers(payments, row.base_price_cash);
 
@@ -1047,7 +1046,7 @@ export async function enrichListings(
       created_at: row.created_at ?? new Date(),
       views: interaction?.views ?? row.views ?? 0,
       clicks: interaction?.clicks ?? row.clicks ?? 0,
-      thumbnail_url: thumbnail?.url ?? null,
+      thumbnail_url: pickListingThumbnailUrl(media),
       has_video: hasVideo,
       is_sponsored: false,
       payment: normalizePaymentOptions(payments),

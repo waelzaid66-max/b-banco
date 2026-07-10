@@ -102,3 +102,34 @@ export function partitionPickedAssets(
   }
   return { accepted, rejectedLong, rejectedBig };
 }
+
+export type ListingPreviewMedia = {
+  type: "image" | "video";
+  url: string;
+  thumbnail_url?: string | null;
+  is_thumbnail?: boolean;
+};
+
+/** Client-side feed/card preview URL — never a raw video file. */
+export function pickListingPreviewUrl(
+  media: ListingPreviewMedia[] | null | undefined,
+): string {
+  if (!media?.length) return "";
+  const sorted = [...media].sort((a, b) => {
+    const aCover = a.is_thumbnail === true;
+    const bCover = b.is_thumbnail === true;
+    if (aCover !== bCover) return aCover ? -1 : 1;
+    return 0;
+  });
+  const cover = sorted.find((m) => m.is_thumbnail && m.type === "image");
+  const firstImage = sorted.find((m) => m.type === "image");
+  const videoPoster = sorted.find(
+    (m) => m.type === "video" && m.thumbnail_url,
+  );
+  return (
+    cover?.url ??
+    firstImage?.url ??
+    videoPoster?.thumbnail_url ??
+    ""
+  );
+}

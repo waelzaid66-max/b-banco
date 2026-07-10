@@ -79,8 +79,10 @@ import {
 import { useI18n } from "@/context/LanguageContext";
 import { useSession } from "@/context/SessionContext";
 import { useColors } from "@/hooks/useColors";
-import { DEFAULT_MARKET_COUNTRY } from "@/constants/listingCreateTaxonomy";
-import { loadPreferredMarketCountry } from "@/lib/marketPreference";
+import {
+  loadPreferredMarketCountry,
+  readPreferredMarketCountrySync,
+} from "@/lib/marketPreference";
 import { sectionAccent } from "@/lib/sectionTheme";
 
 const PAGE_SIZE = 20;
@@ -294,9 +296,9 @@ export default function FeedScreen() {
     isWeb && windowWidth > MAX_CONTENT_WIDTH
       ? (windowWidth - MAX_CONTENT_WIDTH) / 2
       : 16;
-  const { sessionId, isSaved, toggleSave, recentlyViewed, listingsVersion } =
+  const { sessionId, sessionReady, isSaved, toggleSave, recentlyViewed, listingsVersion } =
     useSession();
-  const { isSignedIn, user } = useUser();
+  const { isSignedIn, user, isLoaded: clerkUserLoaded } = useUser();
   const role = (user?.publicMetadata?.role as string) || "";
   const isBusiness = ["dealer", "company", "enterprise"].includes(role);
   const [showLogoMenu, setShowLogoMenu] = useState(false);
@@ -319,9 +321,13 @@ export default function FeedScreen() {
   // Per-section engine filter (cars / real-estate). Key into constants/engines.
   const [engineKey, setEngineKey] = useState<string>("all");
   // Same preferred market as Search/Create — scopes home feed inventory.
-  const [marketCountry, setMarketCountry] = useState(DEFAULT_MARKET_COUNTRY);
-  const [marketReady, setMarketReady] = useState(false);
+  const [marketCountry, setMarketCountry] = useState(() =>
+    readPreferredMarketCountrySync(),
+  );
+  // Web: market is readable synchronously. Native: wait for AsyncStorage once.
+  const [marketReady, setMarketReady] = useState(() => Platform.OS === "web");
   const prefsReady = langReady && marketReady;
+  const bootReady = prefsReady && sessionReady;
   const [items, setItems] = useState<FeedItem[]>([]);
   const [cursor, setCursor] = useState<string | undefined>();
   const [hasNext, setHasNext] = useState(true);
@@ -433,6 +439,10 @@ export default function FeedScreen() {
   const cursorRef = useRef<string | undefined>(undefined);
   cursorRef.current = cursor;
   const prefetchedRef = useRef<Set<string>>(new Set());
+  // Invalidate in-flight feed/rail responses when filters or market change so a
+  // slow reload cannot overwrite fresher data (common on flaky mobile networks).
+  const feedRequestGenRef = useRef(0);
+  const railsRequestGenRef = useRef(0);
 
   const prefetchImages = useCallback((list: FeedItem[]) => {
     const urls: string[] = [];
@@ -449,6 +459,7 @@ export default function FeedScreen() {
 
   const fetchFeed = useCallback(
     async (reset = false, overrideCursor?: string) => {
+      const requestGen = ++feedRequestGenRef.current;
       try {
         // The two industrial groups ("facilities"/"materials") share the API
         // `industrial` category and are separated by industrial_type. We push
@@ -478,6 +489,7 @@ export default function FeedScreen() {
         }
 
         const res = await getFeed(params);
+        if (requestGen !== feedRequestGenRef.current) return;
         const data = res.data ?? [];
         const meta = res.meta;
 
@@ -491,6 +503,7 @@ export default function FeedScreen() {
         setError(false);
         prefetchImages(data);
       } catch {
+        if (requestGen !== feedRequestGenRef.current) return;
         if (reset) setError(true);
       }
     },
@@ -501,6 +514,7 @@ export default function FeedScreen() {
   // Trending, the shared pool, industrial slice, and geo city run in parallel
   // so home rails don't waterfall three feed round-trips on cold open.
   const loadRails = useCallback(async () => {
+    const requestGen = ++railsRequestGenRef.current;
     const [trendingRes, poolRes, industrialRes, geoCity] = await Promise.all([
       getTrending().catch(() => ({ data: [] as FeedItem[] })),
       getFeed({
@@ -518,6 +532,8 @@ export default function FeedScreen() {
       }).catch(() => ({ data: [] as FeedItem[] })),
       detectCity().catch(() => null as string | null),
     ]);
+
+    if (requestGen !== railsRequestGenRef.current) return;
 
     setTrendingItems(trendingRes.data ?? []);
 
@@ -558,8 +574,9 @@ export default function FeedScreen() {
     }
   }, [isSignedIn]);
 
-  // Hydrate preferred market once (shared with Search + Create publish stamp).
+  // Hydrate preferred market once on native (web reads synchronously above).
   useEffect(() => {
+    if (Platform.OS === "web") return;
     let cancelled = false;
     void loadPreferredMarketCountry().then((iso) => {
       if (!cancelled) {
@@ -573,12 +590,14 @@ export default function FeedScreen() {
   }, []);
 
   useEffect(() => {
+    if (!bootReady) return;
     loadRails();
-  }, [loadRails]);
+  }, [loadRails, bootReady]);
 
   useEffect(() => {
+    if (!bootReady) return;
     loadRecommendations();
-  }, [loadRecommendations]);
+  }, [loadRecommendations, bootReady]);
 
   // When the user publishes a listing (bumpListings()), refetch the feed + rails
   // so it shows on the home tab immediately. The ref guard ensures this fires
@@ -599,20 +618,22 @@ export default function FeedScreen() {
   // home tab never flashes an empty skeleton (search already preserves results).
   // Only the true first load (no items yet) uses the full-list skeleton.
   useEffect(() => {
-    if (!prefsReady) return;
+    if (!bootReady) return;
     let cancelled = false;
     const isFirstPaint = items.length === 0;
     if (isFirstPaint) setLoading(true);
     setError(false);
     setCursor(undefined);
     setHasNext(true);
+    feedRequestGenRef.current += 1;
     fetchFeed(true).then(() => {
       if (!cancelled) setLoading(false);
     });
     return () => {
       cancelled = true;
+      feedRequestGenRef.current += 1;
     };
-  }, [category, industrialType, engineKey, marketCountry, prefsReady]);
+  }, [category, industrialType, engineKey, marketCountry, bootReady]);
 
   const handleRetry = async () => {
     const isFirstPaint = items.length === 0;
@@ -1046,34 +1067,44 @@ export default function FeedScreen() {
     );
   };
 
-  const logoMenuRows: {
-    icon: React.ComponentProps<typeof Feather>["name"];
-    label: string;
-    route: Href;
-  }[] = [
-    { icon: "grid", label: t("home.menuMyListings"), route: "/listings/mine" },
-    { icon: "bookmark", label: t("home.menuSaved"), route: "/(tabs)/saved" },
-    { icon: "bell", label: t("home.menuAlerts"), route: "/notifications" },
-    { icon: "user", label: t("home.menuProfile"), route: "/(tabs)/profile" },
-    { icon: "briefcase", label: t("home.menuBusiness"), route: "/business/supply-hub" },
-    { icon: "message-square", label: t("home.menuAssistant"), route: "/assistant" },
-    { icon: "settings", label: t("home.menuSettings"), route: "/settings" },
-  ];
-  if (isBusiness) {
-    logoMenuRows.push({
-      icon: "users",
-      label: t("home.menuLeads"),
-      route: "/business/requests",
-    });
-  } else {
-    // Prominent, always-visible path for individuals into the BANCO Business
-    // company-account + verification (KYC) flow.
-    logoMenuRows.unshift({
-      icon: "shield",
-      label: t("home.menuGetVerified"),
-      route: "/business/onboarding",
-    });
-  }
+  const logoMenuRows = useMemo(() => {
+    const rows: {
+      icon: React.ComponentProps<typeof Feather>["name"];
+      label: string;
+      route: Href;
+    }[] = [
+      { icon: "grid", label: t("home.menuMyListings"), route: "/listings/mine" },
+      { icon: "bookmark", label: t("home.menuSaved"), route: "/(tabs)/saved" },
+      { icon: "bell", label: t("home.menuAlerts"), route: "/notifications" },
+      { icon: "user", label: t("home.menuProfile"), route: "/(tabs)/profile" },
+      {
+        icon: "briefcase",
+        label: t("home.menuBusiness"),
+        route: "/business/supply-hub",
+      },
+      {
+        icon: "message-square",
+        label: t("home.menuAssistant"),
+        route: "/assistant",
+      },
+      { icon: "settings", label: t("home.menuSettings"), route: "/settings" },
+    ];
+    if (!clerkUserLoaded) return rows;
+    if (isBusiness) {
+      rows.push({
+        icon: "users",
+        label: t("home.menuLeads"),
+        route: "/business/requests",
+      });
+    } else {
+      rows.unshift({
+        icon: "shield",
+        label: t("home.menuGetVerified"),
+        route: "/business/onboarding",
+      });
+    }
+    return rows;
+  }, [clerkUserLoaded, isBusiness, t]);
 
   const handleSort = (key: string) => {
     Haptics.selectionAsync().catch(() => {});
@@ -1091,6 +1122,7 @@ export default function FeedScreen() {
   return (
     <View style={[styles.container, { backgroundColor: colors.background }]}>
       <View
+        pointerEvents={bootReady ? "auto" : "none"}
         style={[
           styles.header,
           {
@@ -1176,13 +1208,18 @@ export default function FeedScreen() {
         </Pressable>
       </View>
 
-      <CategoryTabs
-        selected={category}
-        onChange={handleCategoryChange}
-        visible={visibleCats}
-      />
+      <View pointerEvents={bootReady ? "auto" : "none"}>
+        <CategoryTabs
+          selected={category}
+          onChange={handleCategoryChange}
+          visible={visibleCats}
+        />
+      </View>
       {showEngineBar ? (
-        <Animated.View style={[styles.engineBar, engineBarStyle]}>
+        <Animated.View
+          style={[styles.engineBar, engineBarStyle]}
+          pointerEvents={compact ? "none" : "auto"}
+        >
           <View
             onLayout={(e) => {
               // Measure on every content change (incl. while compact) so a
@@ -1214,7 +1251,7 @@ export default function FeedScreen() {
         </Animated.View>
       ) : null}
 
-      {!prefsReady || (loading && items.length === 0) ? (
+      {!bootReady || (loading && items.length === 0) ? (
         renderSkeletons()
       ) : error && items.length === 0 ? (
         renderError()

@@ -1,8 +1,10 @@
 import { useAuth } from "@clerk/expo";
 import {
+  getListNotificationsQueryKey,
   registerPushToken,
   unregisterPushToken,
 } from "@workspace/api-client-react";
+import { useQueryClient } from "@tanstack/react-query";
 import Constants, { ExecutionEnvironment } from "expo-constants";
 import * as Device from "expo-device";
 import * as Notifications from "expo-notifications";
@@ -120,6 +122,7 @@ async function obtainExpoPushToken(): Promise<string | null> {
 
 export function PushNotificationsBridge() {
   const { isSignedIn } = useAuth();
+  const queryClient = useQueryClient();
   // The local "Push notifications" setting gates device registration: turning it
   // off unregisters this device's token (server stops pushing here); turning it
   // back on re-registers. `ready` defers the first run until the stored pref has
@@ -153,17 +156,32 @@ export function PushNotificationsBridge() {
     };
   }, [isSignedIn, notificationsEnabled, ready]);
 
+  // Refresh in-app feed + home bell badge when a push lands while the app is open.
+  useEffect(() => {
+    if (isExpoGo) return;
+    const sub = Notifications.addNotificationReceivedListener(() => {
+      queryClient.invalidateQueries({ queryKey: getListNotificationsQueryKey() });
+    });
+    return () => sub.remove();
+  }, [queryClient]);
+
   // Deep-link on tap: cold start (opened from a notification) + warm taps.
   useEffect(() => {
     if (isExpoGo) return;
     Notifications.getLastNotificationResponseAsync()
-      .then((r) => handleResponse(r, isSignedIn === true))
+      .then((r) => {
+        handleResponse(r, isSignedIn === true);
+        if (r) {
+          queryClient.invalidateQueries({ queryKey: getListNotificationsQueryKey() });
+        }
+      })
       .catch(() => {});
-    const sub = Notifications.addNotificationResponseReceivedListener((r) =>
-      handleResponse(r, isSignedIn === true),
-    );
+    const sub = Notifications.addNotificationResponseReceivedListener((r) => {
+      handleResponse(r, isSignedIn === true);
+      queryClient.invalidateQueries({ queryKey: getListNotificationsQueryKey() });
+    });
     return () => sub.remove();
-  }, [isSignedIn]);
+  }, [isSignedIn, queryClient]);
 
   return null;
 }

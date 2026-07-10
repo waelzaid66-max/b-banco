@@ -57,6 +57,7 @@ import { labelForValue } from "@/constants/locations";
 import { DEFAULT_MARKET_COUNTRY } from "@/constants/listingCreateTaxonomy";
 import {
   loadPreferredMarketCountry,
+  readPreferredMarketCountrySync,
   savePreferredMarketCountry,
 } from "@/lib/marketPreference";
 import { engineByKey, enginesForCategory } from "@/constants/engines";
@@ -220,15 +221,16 @@ export default function SearchScreen() {
   const { criteria, items, viewState, phase, hasNext, commit, update, applyPatch, loadMore, retry } =
     search;
 
-  // Hydrate preferred market (shared with create publish stamp) once on mount.
-  const marketHydrated = useRef(false);
+  // Native: confirm preferred market from AsyncStorage once. Web/search hook
+  // already seeds criteria from readPreferredMarketCountrySync().
+  const marketHydrated = useRef(Platform.OS === "web");
   useEffect(() => {
     if (marketHydrated.current) return;
     let cancelled = false;
     void loadPreferredMarketCountry().then((iso) => {
       if (cancelled) return;
       marketHydrated.current = true;
-      if (iso === DEFAULT_MARKET_COUNTRY) return;
+      if (iso === criteria.marketCountry) return;
       applyPatch({
         marketCountry: iso,
         rentalTerm: sanitizeRentalTermForMarket(null, iso),
@@ -238,7 +240,7 @@ export default function SearchScreen() {
     return () => {
       cancelled = true;
     };
-  }, [applyPatch, retry, items.length, phase]);
+  }, [applyPatch, retry, items.length, phase, criteria.marketCountry]);
 
   // Map view toggle. Only results that carry real coordinates are mappable, so
   // both the toggle's visibility and the map's honest "N on the map" caption are

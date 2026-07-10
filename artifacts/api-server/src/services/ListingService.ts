@@ -8,7 +8,7 @@ import {
   interactions,
   locations,
 } from "@workspace/db/schema";
-import { eq, and, desc, sql, count } from "drizzle-orm";
+import { eq, and, desc, asc, sql, count } from "drizzle-orm";
 import { normalizePaymentOptions, computeOffers } from "./PaymentService";
 import { normalizeListing, detectDuplicate, computeTrustScore, validateMedia } from "./NormalizationService";
 import { checkListingRate, auditListingFlag } from "./AbuseService";
@@ -21,6 +21,7 @@ import { getLinksForListing } from "./ListingLinkService";
 import { mintContactToken } from "./LeadService";
 import { getSocialLinksForUserId } from "./ProfileService";
 import { publicVisibilityConditions } from "../lib/feedVisibility";
+import { sortListingMedia, pickListingThumbnailUrl } from "../lib/listingMediaPreview";
 import { getObjectStorageService } from "../lib/objectStorageProvider";
 import {
   assertCallerMayUseUpload,
@@ -581,7 +582,11 @@ export async function getListingDetail(listingId: string, viewerClerkId?: string
 
   const [mediaRows, paymentRows, attrRows, linkedListings, contactToken, sellerSocialLinks] =
     await Promise.all([
-    db.select().from(listingMedia).where(eq(listingMedia.listingId, listingId)),
+    db
+      .select()
+      .from(listingMedia)
+      .where(eq(listingMedia.listingId, listingId))
+      .orderBy(desc(listingMedia.isThumbnail), asc(listingMedia.sortOrder)),
     db.select().from(paymentOptions).where(eq(paymentOptions.listingId, listingId)),
     db.select().from(listingAttributes).where(eq(listingAttributes.listingId, listingId)).limit(1),
     getLinksForListing(listingId),
@@ -660,7 +665,7 @@ export async function getListingDetail(listingId: string, viewerClerkId?: string
     location: listing.location,
     status: listing.status,
     created_at: listing.created_at?.toISOString() ?? new Date().toISOString(),
-    media: mediaRows.map((m) => ({
+    media: sortListingMedia(mediaRows).map((m) => ({
       id: m.id,
       type: m.type,
       url: m.url,
@@ -765,15 +770,21 @@ export async function getSeoListing(listingId: string): Promise<SeoListing | nul
       url: listingMedia.url,
       thumbnail_url: listingMedia.thumbnailUrl,
       is_thumbnail: listingMedia.isThumbnail,
+      sort_order: listingMedia.sortOrder,
     })
     .from(listingMedia)
-    .where(eq(listingMedia.listingId, listingId));
+    .where(eq(listingMedia.listingId, listingId))
+    .orderBy(desc(listingMedia.isThumbnail), asc(listingMedia.sortOrder));
 
-  const cover = mediaRows.find((m) => m.is_thumbnail && m.type === "image");
-  const firstImage = mediaRows.find((m) => m.type === "image");
-  const videoPoster = mediaRows.find((m) => m.type === "video" && m.thumbnail_url);
-  const image_path =
-    cover?.url ?? firstImage?.url ?? videoPoster?.thumbnail_url ?? null;
+  const image_path = pickListingThumbnailUrl(
+    mediaRows.map((m) => ({
+      type: m.type,
+      url: m.url,
+      thumbnail_url: m.thumbnail_url,
+      is_thumbnail: m.is_thumbnail,
+      sort_order: m.sort_order,
+    })),
+  );
 
   return {
     id: row.id,
@@ -1041,7 +1052,8 @@ export async function updateListing(
   const mediaRows = await db
     .select({ type: listingMedia.type, url: listingMedia.url })
     .from(listingMedia)
-    .where(eq(listingMedia.listingId, id));
+    .where(eq(listingMedia.listingId, id))
+    .orderBy(desc(listingMedia.isThumbnail), asc(listingMedia.sortOrder));
 
   const mergedSpecs = {
     ...((existingAttr?.specs as Record<string, unknown>) ?? {}),

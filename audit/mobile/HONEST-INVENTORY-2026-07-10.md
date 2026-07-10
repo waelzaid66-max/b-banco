@@ -7,7 +7,7 @@ Rules applied: no fake “all green”, no deleted account/section journeys, no 
 | Layer | Truth |
 |-------|--------|
 | Local branch code (M01–M31 + waves 6–9) | Present in workspace |
-| Automated tests offline | **PASS** — lib-hardening **47/47**, search-contract **37+**, production-confidence **17/17** (--skip-typecheck) |
+| Automated tests offline | **PASS** — lib-hardening **54/54**, search-contract **37**, production-confidence **17/17** (--skip-typecheck) |
 | Live Replit wave 6 | **FRESH** — ISO reject + map `is_bookable`/`price_display` |
 | Live Replit wave 8 | **STALE** — `seller.social_links` not on live JSON |
 | Real-device DoD | **OPEN** until redeploy wave 8 + Expo/device QA |

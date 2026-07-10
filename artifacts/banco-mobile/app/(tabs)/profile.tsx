@@ -57,7 +57,7 @@ import {
 import { useI18n } from "@/context/LanguageContext";
 import { useSession } from "@/context/SessionContext";
 import { useColors } from "@/hooks/useColors";
-import { buildAvatarDataUri, uploadMediaAsset } from "@/lib/upload";
+import { buildAvatarDataUri, uploadErrorMessageKey, uploadMediaAsset, verifyUploadWithRetry } from "@/lib/upload";
 
 // Finalizes any pending OAuth redirect when the in-app browser returns.
 WebBrowser.maybeCompleteAuthSession();
@@ -146,6 +146,7 @@ export default function ProfileScreen() {
   const [lastName, setLastName] = useState("");
 
   const [showPhotoRationale, setShowPhotoRationale] = useState(false);
+  const [showCoverRationale, setShowCoverRationale] = useState(false);
   const [uploadingPhoto, setUploadingPhoto] = useState(false);
   const [agreedToTerms, setAgreedToTerms] = useState(false);
   const [signupPhoneIso, setSignupPhoneIso] = useState("EG");
@@ -332,7 +333,7 @@ export default function ProfileScreen() {
   // Cover photo — reuses the shared media upload (returns a hosted URL) and
   // stores only the URL string in Clerk unsafeMetadata. No new endpoint.
   const launchCoverPicker = async () => {
-    setShowMenu(false);
+    setShowCoverRationale(false);
     try {
       const perm = await ImagePicker.requestMediaLibraryPermissionsAsync();
       if (!perm.granted) {
@@ -361,6 +362,7 @@ export default function ProfileScreen() {
       if (result.canceled || !asset) return;
       setUploadingCover(true);
       const uploaded = await uploadMediaAsset(asset);
+      await verifyUploadWithRetry(uploaded.url);
       // Covers upload PRIVATE; promote to public ACL so the serve handler returns
       // them without auth (web + mobile <Image> send no bearer). Promote BEFORE
       // persisting the URL — a coverUrl that 403s is worse than no cover.
@@ -377,7 +379,7 @@ export default function ProfileScreen() {
       console.warn("[profile] cover upload failed", e);
       Alert.alert(
         t("profile.photoUploadFailedTitle"),
-        t("profile.photoUploadFailedBody"),
+        t(uploadErrorMessageKey(e)),
       );
     } finally {
       setUploadingCover(false);
@@ -873,7 +875,10 @@ export default function ProfileScreen() {
         key: "cover",
         icon: "image",
         label: t("profile.changeCover"),
-        onPress: launchCoverPicker,
+        onPress: () => {
+          setShowMenu(false);
+          setShowCoverRationale(true);
+        },
       },
       {
         key: "listings",
@@ -1066,7 +1071,7 @@ export default function ProfileScreen() {
             ]}
           >
             <Pressable
-              onPress={launchCoverPicker}
+              onPress={() => setShowCoverRationale(true)}
               hitSlop={8}
               style={styles.coverActionBtn}
               testID="cover-edit"
@@ -1913,6 +1918,23 @@ export default function ProfileScreen() {
               t("profile.photoAccessBullet3"),
             ],
             confirmLabel: t("profile.photoAccessConfirm"),
+          }}
+        />
+
+        <PermissionRationaleModal
+          visible={showCoverRationale}
+          onAcknowledge={launchCoverPicker}
+          onCancel={() => setShowCoverRationale(false)}
+          config={{
+            icon: "image-outline",
+            title: t("profile.coverAccessTitle"),
+            message: t("profile.coverAccessMessage"),
+            bullets: [
+              t("profile.coverAccessBullet1"),
+              t("profile.coverAccessBullet2"),
+              t("profile.coverAccessBullet3"),
+            ],
+            confirmLabel: t("profile.coverAccessConfirm"),
           }}
         />
 

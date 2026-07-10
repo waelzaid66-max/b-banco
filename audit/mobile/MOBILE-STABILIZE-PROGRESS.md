@@ -2,6 +2,19 @@
 
 Branch: `main` (was `fix/mobile-master-stabilize` — merged)
 
+### Wave 10 — media pipeline + home boot + assistant/notifications (2026-07-10)
+| Fix | Detail |
+|-----|--------|
+| API | `listingMediaPreview.ts` — safe thumbnails in feed/search/detail/links |
+| Mobile media | `pickListingPreviewUrl` · cover verify · shared `verifyUploadWithRetry` |
+| Home | `bootReady` · sessionId persist · stale fetch gen · header/tabs pointerEvents |
+| Search | market sync hydrate · `readPreferredMarketCountrySync` seed |
+| Assistant | industrial→facilities · wallet/billing/rentals/supply screens on server+client |
+| Push | invalidate notifications query on foreground receive + tap |
+| Version | app `1.0.1` (iOS build 2 · Android versionCode 2) |
+| Tests | lib-hardening **54/54** · listingMediaPreview **4/4** · ops:full-verify **PASS** |
+| Report | `audit/mobile/WAVE-10-MASTER-REPORT-AR.md` |
+
 ### Wave 9 — UX/product pass (2026-07-10, `eb41fd9`)
 | Fix | Detail |
 |-----|--------|

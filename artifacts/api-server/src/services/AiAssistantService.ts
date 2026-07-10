@@ -38,8 +38,12 @@ export type AssistantScreen =
   | "my_listings"
   | "create_listing"
   | "wallet"
+  | "billing"
   | "profile"
-  | "notifications";
+  | "notifications"
+  | "rentals"
+  | "supply_hub"
+  | "industry";
 
 export interface AssistantAction {
   kind: AssistantActionKind;
@@ -96,8 +100,12 @@ const SCREENS: readonly AssistantScreen[] = [
   "my_listings",
   "create_listing",
   "wallet",
+  "billing",
   "profile",
   "notifications",
+  "rentals",
+  "supply_hub",
+  "industry",
 ];
 
 const SCREEN_LABELS: Record<AssistantScreen, { en: string; ar: string }> = {
@@ -108,8 +116,12 @@ const SCREEN_LABELS: Record<AssistantScreen, { en: string; ar: string }> = {
   my_listings: { en: "My listings", ar: "إعلاناتي" },
   create_listing: { en: "Post a listing", ar: "أضف إعلان" },
   wallet: { en: "Wallet", ar: "المحفظة" },
+  billing: { en: "Billing", ar: "الفواتير والاشتراك" },
   profile: { en: "Profile", ar: "حسابي" },
   notifications: { en: "Notifications", ar: "الإشعارات" },
+  rentals: { en: "Rentals hub", ar: "مركز الإيجار" },
+  supply_hub: { en: "Business & supply", ar: "الأعمال والتوريد" },
+  industry: { en: "Industry hub", ar: "مركز الصناعة" },
 };
 
 function isArabic(text: string): boolean {
@@ -447,7 +459,10 @@ export async function askBancoAssistant(
               label: it.title,
               listing_id: it.id,
               price_display: it.price_display,
-              thumbnail_url: it.media_preview || null,
+              thumbnail_url:
+                it.media_preview ??
+                (it as { thumbnail_url?: string | null }).thumbnail_url ??
+                null,
               location: it.location,
             }));
             searchAction = searchActionFor(query, parsed, ar);

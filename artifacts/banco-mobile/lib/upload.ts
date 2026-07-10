@@ -1,6 +1,6 @@
 import * as ImagePicker from "expo-image-picker";
 import { ImageManipulator, SaveFormat } from "expo-image-manipulator";
-import { requestUploadUrl } from "@workspace/api-client-react";
+import { requestUploadUrl, verifyUpload } from "@workspace/api-client-react";
 
 export type UploadedMedia = { url: string; type: "image" | "video" };
 
@@ -265,6 +265,31 @@ export function uploadErrorMessageKey(err: unknown): string {
   if (status === 403) return "create.errUploadExpired";
   if (status === 503) return "create.errUploadNetwork";
   return "create.errUpload";
+}
+
+/**
+ * Confirm the stored object is readable before promote/publish. The verify
+ * endpoint can return 503 while storage metadata settles; retry a few times.
+ */
+export async function verifyUploadWithRetry(
+  url: string,
+  opts?: { signal?: AbortSignal; maxAttempts?: number },
+): Promise<void> {
+  const maxAttempts = opts?.maxAttempts ?? 4;
+  for (let attempt = 1; attempt <= maxAttempts; attempt += 1) {
+    if (opts?.signal?.aborted) return;
+    try {
+      await verifyUpload({ url });
+      return;
+    } catch (e) {
+      const status = (e as { status?: number } | null)?.status;
+      if (status === 503 && attempt < maxAttempts) {
+        await new Promise((r) => setTimeout(r, 700 * attempt));
+        continue;
+      }
+      throw e;
+    }
+  }
 }
 
 /**
