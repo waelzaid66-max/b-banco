@@ -23,10 +23,14 @@ import {
   type SocialLinkPlatform,
 } from "@workspace/api-client-react";
 import React, { useEffect, useRef, useState } from "react";
-import type { UserResource } from "@clerk/types";
+
+type ClerkProfileUser = {
+  publicMetadata?: Record<string, unknown> | null;
+  unsafeMetadata?: Record<string, unknown> | null;
+} | null | undefined;
 
 function readClerkPresentational(
-  user: UserResource | null | undefined,
+  user: ClerkProfileUser,
   key: "bio" | "displayTitle" | "categoryLabel",
 ): string {
   if (!user) return "";
@@ -416,21 +420,12 @@ export default function ProfileScreen() {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
     setSavingProfile(true);
     try {
-      await user?.update({
-        unsafeMetadata: {
-          ...(user.unsafeMetadata ?? {}),
-          displayTitle: displayTitleDraft.trim(),
-          categoryLabel: categoryLabelDraft.trim(),
-          bio: bioDraft.trim(),
-        },
-        publicMetadata: {
-          ...(user.publicMetadata ?? {}),
-          displayTitle: displayTitleDraft.trim(),
-          categoryLabel: categoryLabelDraft.trim(),
-          bio: bioDraft.trim(),
-        },
+      await updateMe({
+        bio: bioDraft.trim() || null,
+        display_title: displayTitleDraft.trim() || null,
+        category_label: categoryLabelDraft.trim() || null,
       });
-      await user?.reload();
+      await user?.reload?.();
       await queryClient.invalidateQueries({ queryKey: getGetMeQueryKey() });
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
       setShowEditProfile(false);

@@ -670,7 +670,7 @@ export async function getAutocomplete(
   query: string,
   opts?: {
     category?: "car" | "real_estate" | "industrial";
-    industrial_type?: string[];
+    industrial_type?: IndustrialSubtype[];
   },
 ): Promise<string[]> {
   if (!query || query.length < 2) return [];

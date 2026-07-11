@@ -1,68 +1,57 @@
-/**
- * Pure unit tests for commodity-material API gate (no DB).
- * Run from api-server:
- *   node --import tsx --test src/services/allowCommodityMaterialFilter.test.ts
- */
-import test from "node:test";
-import assert from "node:assert/strict";
-import { allowCommodityMaterialFilter } from "./allowCommodityMaterialFilter.ts";
+import { describe, it, expect } from "vitest";
+import { allowCommodityMaterialFilter } from "./allowCommodityMaterialFilter";
 
-test("allows material on industrial / materials browse", () => {
-  assert.equal(
-    allowCommodityMaterialFilter({
-      category: "industrial",
-      industrial_type: ["raw_material"],
-      material: "steel",
-    }),
-    true,
-  );
-  assert.equal(
-    allowCommodityMaterialFilter({
-      category: "industrial",
-      industrial_type: ["production_line", "raw_material", "machine"],
-      material: "steel",
-    }),
-    true,
-  );
-  assert.equal(allowCommodityMaterialFilter({ material: "steel" }), true);
-});
+describe("allowCommodityMaterialFilter", () => {
+  it("allows material on industrial / materials browse", () => {
+    expect(
+      allowCommodityMaterialFilter({
+        category: "industrial",
+        industrial_type: ["raw_material"],
+        material: "steel",
+      }),
+    ).toBe(true);
+    expect(
+      allowCommodityMaterialFilter({
+        category: "industrial",
+        industrial_type: ["production_line", "raw_material", "machine"],
+        material: "steel",
+      }),
+    ).toBe(true);
+    expect(allowCommodityMaterialFilter({ material: "steel" })).toBe(true);
+  });
 
-test("rejects material on car / real_estate", () => {
-  assert.equal(
-    allowCommodityMaterialFilter({ category: "car", material: "steel" }),
-    false,
-  );
-  assert.equal(
-    allowCommodityMaterialFilter({
-      category: "real_estate",
-      material: "steel",
-    }),
-    false,
-  );
-});
+  it("rejects material on car / real_estate", () => {
+    expect(
+      allowCommodityMaterialFilter({ category: "car", material: "steel" }),
+    ).toBe(false);
+    expect(
+      allowCommodityMaterialFilter({
+        category: "real_estate",
+        material: "steel",
+      }),
+    ).toBe(false);
+  });
 
-test("rejects material when industrial_type is facilities-only", () => {
-  assert.equal(
-    allowCommodityMaterialFilter({
-      category: "industrial",
-      industrial_type: ["factory", "warehouse"],
-      material: "steel",
-    }),
-    false,
-  );
-  assert.equal(
-    allowCommodityMaterialFilter({
-      category: "industrial",
-      industrial_type: ["land"],
-      material: "steel",
-    }),
-    false,
-  );
-});
+  it("rejects material when industrial_type is facilities-only", () => {
+    expect(
+      allowCommodityMaterialFilter({
+        category: "industrial",
+        industrial_type: ["factory", "warehouse"],
+        material: "steel",
+      }),
+    ).toBe(false);
+    expect(
+      allowCommodityMaterialFilter({
+        category: "industrial",
+        industrial_type: ["land"],
+        material: "steel",
+      }),
+    ).toBe(false);
+  });
 
-test("rejects when material missing", () => {
-  assert.equal(
-    allowCommodityMaterialFilter({ category: "industrial" }),
-    false,
-  );
+  it("rejects when material missing", () => {
+    expect(
+      allowCommodityMaterialFilter({ category: "industrial" }),
+    ).toBe(false);
+  });
 });

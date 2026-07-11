@@ -95,7 +95,7 @@ const proof = {
   facetNormalizeClearsRental: /patch\.engineKey = "all"[\s\S]*rentalTerm = null/.test(
     search,
   ),
-  mapExitUsesCriteriaKey: /criteriaMapKey = criteriaKey\(criteria\)/.test(search),
+  mapExitUsesMapAnchorKey: /mapSectionKey = mapAnchorKey\(criteria\)/.test(search),
   sheetYearsGatedToCar:
     /category === "car"[\s\S]*minYear|minYear: ""[\s\S]*maxYear: ""/.test(sheet),
   sheetPaymentGated: /showPayment[\s\S]*real_estate/.test(sheet),

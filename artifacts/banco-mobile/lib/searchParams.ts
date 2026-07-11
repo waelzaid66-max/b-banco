@@ -12,6 +12,7 @@ export {
   type SearchCriteria,
   hasActiveCriteria,
   criteriaKey,
+  mapAnchorKey,
   buildSearchParams,
   buildMapClusterParams,
   buildSearchUrlParams,

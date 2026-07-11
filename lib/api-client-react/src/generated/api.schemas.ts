@@ -253,17 +253,36 @@ export interface PaymentSummary {
   badge?: string | null;
 }
 
+export type SocialLinkPlatform = typeof SocialLinkPlatform[keyof typeof SocialLinkPlatform];
+
+
+export const SocialLinkPlatform = {
+  instagram: 'instagram',
+  linkedin: 'linkedin',
+  website: 'website',
+  whatsapp: 'whatsapp',
+} as const;
+
+/**
+ * Public seller/company social link shown on the profile (Task
+ */
+export interface SocialLink {
+  platform: SocialLinkPlatform;
+  /** URL (website/linkedin/instagram) or phone (whatsapp), normalized server-side. */
+  value: string;
+}
+
 export interface Seller {
   id: string;
   name: string;
   role: string;
   is_verified: boolean;
   phone?: string | null;
-  /** Public profile social chips surfaced on listing detail for buyers. */
+  /** Public seller profile links (Task */
   social_links?: SocialLink[];
-  /** Seller bio from public profile — visible on listing detail. */
+  /** Public seller bio shown on listing detail (from Clerk profile). */
   bio?: string | null;
-  /** Display title / business name from public profile. */
+  /** Public display title / business name on listing detail. */
   display_title?: string | null;
 }
 
@@ -630,25 +649,6 @@ export interface ReviewBody {
      */
   rating: number;
   body?: string | null;
-}
-
-export type SocialLinkPlatform = typeof SocialLinkPlatform[keyof typeof SocialLinkPlatform];
-
-
-export const SocialLinkPlatform = {
-  instagram: 'instagram',
-  linkedin: 'linkedin',
-  website: 'website',
-  whatsapp: 'whatsapp',
-} as const;
-
-/**
- * Public seller/company social link shown on the profile (Task
- */
-export interface SocialLink {
-  platform: SocialLinkPlatform;
-  /** URL (website/linkedin/instagram) or phone (whatsapp), normalized server-side. */
-  value: string;
 }
 
 export type NotificationPreferenceType = typeof NotificationPreferenceType[keyof typeof NotificationPreferenceType];
@@ -1547,7 +1547,7 @@ export interface MapCluster {
   lng: number;
   count: number;
   listing_id: string | null;
-  /** True when the single pin is a furnished/daily real-estate rental. Null for multi-listing cells. */
+  /** True when the single pin is a furnished/daily real-estate rental (same rule as FeedItem.is_bookable). Null for multi-listing cells. */
   is_bookable: boolean | null;
   /** UI-ready price label for a single pin. Null for multi-listing cells. */
   price_display: string | null;
@@ -2361,6 +2361,10 @@ export type UpdateMeBody = {
   /** Account type chosen at onboarding. Server is authoritative for the resulting role (individual/dealer/company); a client can never request admin/enterprise. */
   account_type?: UpdateMeBodyAccountType;
   phone?: string | null;
+  /** Public seller bio shown on listing detail (server mirrors to Clerk). */
+  bio?: string | null;
+  display_title?: string | null;
+  category_label?: string | null;
   /** When present, upgrades the account to a Banco Business (dealer) seller. */
   business?: UpdateMeBodyBusiness;
 };
@@ -2417,6 +2421,7 @@ offer_type?: GetFeedOfferType;
 rental_term?: string;
 /**
  * ISO 3166-1 alpha-2 market country (EG, SA, …). Filters inventory by specs.market_country; listings without the key are treated as EG.
+ * @pattern ^[A-Za-z]{2}$
  */
 market_country?: string;
 /**
@@ -2452,7 +2457,8 @@ industry?: GetFeedIndustry;
  */
 origin_type?: GetFeedOriginType;
 /**
- * Filter raw-material commodity listings by specs.material (steel, aluminum, …).
+ * Filter raw-material commodity listings by specs.material (steel, aluminum, copper, …). Free string; catalog is client-side.
+ * @maxLength 40
  */
 material?: string;
 session_id?: string;
@@ -2768,7 +2774,22 @@ export type UpdateListingBodyLogistics = {
   shipping_method?: UpdateListingBodyLogisticsShippingMethod;
 };
 
-export type UpdateListingBodyMediaItem = CreateListingBodyMediaItem;
+export type UpdateListingBodyMediaItemType = typeof UpdateListingBodyMediaItemType[keyof typeof UpdateListingBodyMediaItemType];
+
+
+export const UpdateListingBodyMediaItemType = {
+  image: 'image',
+  video: 'video',
+} as const;
+
+export type UpdateListingBodyMediaItem = {
+  type: UpdateListingBodyMediaItemType;
+  url: string;
+  thumbnail_url?: string;
+  is_thumbnail?: boolean;
+  width?: number;
+  height?: number;
+};
 
 export type UpdateListingBody = {
   title?: string;
@@ -2780,7 +2801,7 @@ export type UpdateListingBody = {
   specs?: UpdateListingBodySpecs;
   /** Additive (Task #40). Optional logistics & delivery patch. All fields optional/nullable. */
   logistics?: UpdateListingBodyLogistics;
-  /** Replace listing media in seller order. Omit to leave photos unchanged. */
+  /** Replace listing media in seller order. Omit to leave photos unchanged. Sale listings must keep at least one item. */
   media?: UpdateListingBodyMediaItem[];
 };
 
@@ -2920,6 +2941,7 @@ offer_type?: SearchListingsOfferType;
 rental_term?: string;
 /**
  * ISO 3166-1 alpha-2 market country (EG, SA, …). Filters inventory by specs.market_country; listings without the key are treated as EG.
+ * @pattern ^[A-Za-z]{2}$
  */
 market_country?: string;
 /**
@@ -2955,7 +2977,8 @@ industry?: SearchListingsIndustry;
  */
 origin_type?: SearchListingsOriginType;
 /**
- * Filter raw-material commodity listings by specs.material (steel, aluminum, …).
+ * Filter raw-material commodity listings by specs.material (steel, aluminum, copper, …). Free string; catalog is client-side.
+ * @maxLength 40
  */
 material?: string;
 /**
@@ -3107,6 +3130,7 @@ offer_type?: GetMapClustersOfferType;
 rental_term?: string;
 /**
  * ISO market country (EG, SA, …); missing specs coalesce to EG.
+ * @pattern ^[A-Za-z]{2}$
  */
 market_country?: string;
 fuel_type?: GetMapClustersFuelType;
@@ -3118,7 +3142,8 @@ max_year?: number;
 industry?: GetMapClustersIndustry;
 origin_type?: GetMapClustersOriginType;
 /**
- * Filter raw-material commodity listings by specs.material (steel, aluminum, …).
+ * Filter raw-material commodity listings by specs.material.
+ * @maxLength 40
  */
 material?: string;
 /**
@@ -3244,14 +3269,21 @@ export type GetFacets200 = {
 
 export type GetAutocompleteParams = {
 q: string;
+category?: GetAutocompleteCategory;
 /**
- * API listing category — scopes suggestions to one browse company.
- * facilities/materials clients send `industrial` + industrial_type.
+ * Comma-separated industrial subtypes (facilities vs materials)
  */
-category?: 'car' | 'real_estate' | 'industrial';
-/** Comma-separated industrial subtypes (factory,warehouse,land | production_line,raw_material,machine). */
 industrial_type?: string;
 };
+
+export type GetAutocompleteCategory = typeof GetAutocompleteCategory[keyof typeof GetAutocompleteCategory];
+
+
+export const GetAutocompleteCategory = {
+  car: 'car',
+  real_estate: 'real_estate',
+  industrial: 'industrial',
+} as const;
 
 export type GetAutocomplete200 = {
   data?: string[];

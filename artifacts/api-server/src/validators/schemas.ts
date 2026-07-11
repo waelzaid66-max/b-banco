@@ -272,6 +272,20 @@ export const LogisticsInputSchema = z
   })
   .strict();
 
+export const SocialPlatformEnum = z.enum([
+  "instagram",
+  "linkedin",
+  "website",
+  "whatsapp",
+]);
+
+export const SocialLinkSchema = z
+  .object({
+    platform: SocialPlatformEnum,
+    value: z.string().trim().min(1).max(300),
+  })
+  .strict();
+
 export const ListingDetailSchema = z
   .object({
     id: z.string(),
@@ -581,20 +595,6 @@ export const MyMetricsSchema = z
   })
   .strict();
 
-export const SocialPlatformEnum = z.enum([
-  "instagram",
-  "linkedin",
-  "website",
-  "whatsapp",
-]);
-
-export const SocialLinkSchema = z
-  .object({
-    platform: SocialPlatformEnum,
-    value: z.string().trim().min(1).max(300),
-  })
-  .strict();
-
 export const SetSocialLinksSchema = z
   .object({ links: z.array(SocialLinkSchema).max(10) })
   .strict();
@@ -895,6 +895,10 @@ export const UpdateMeSchema = z
   .object({
     account_type: z.enum(["individual", "dealer", "company"]).optional(),
     phone: z.string().trim().min(4).max(30).nullable().optional(),
+    /** Public seller bio — mirrored to Clerk publicMetadata server-side. */
+    bio: z.string().trim().max(500).nullable().optional(),
+    display_title: z.string().trim().max(120).nullable().optional(),
+    category_label: z.string().trim().max(80).nullable().optional(),
     business: z
       .object({
         activity_type: z.enum([

@@ -3448,6 +3448,16 @@ paths:
                 phone:
                   type: string
                   nullable: true
+                bio:
+                  type: string
+                  nullable: true
+                  description: Public seller bio shown on listing detail (server mirrors to Clerk).
+                display_title:
+                  type: string
+                  nullable: true
+                category_label:
+                  type: string
+                  nullable: true
                 business:
                   type: object
                   description: When present, upgrades the account to a Banco Business (dealer) seller.

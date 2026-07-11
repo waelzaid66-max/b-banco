@@ -2054,6 +2054,7 @@ export const getGetAutocompleteUrl = (params: GetAutocompleteParams,) => {
 }
 
 /**
+ * Title suggestions scoped to the active browse company when category (and optional industrial_type CSV) are provided. Without category, suggestions span all public inventory.
  * @summary Autocomplete suggestions
  */
 export const getAutocomplete = async (params: GetAutocompleteParams, options?: RequestInit): Promise<GetAutocomplete200> => {

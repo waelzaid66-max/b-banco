@@ -1,6 +1,6 @@
 # حالة الريبوهين الرسميين — مصدر الحقيقة
 
-**آخر تحديث:** 2026-07-10 (موجة 10C + production snapshot v1.1.4)  
+**آخر تحديث:** 2026-07-11 (v1.1.5 production hardening + browse journeys)  
 **النطاق:** ريبوهان الإنتاج + مرآات GitHub (bbanco · bdeals · B-OOM).
 
 | الريبو | الرابط | الدور |
@@ -8,8 +8,8 @@
 | **أساسي** | https://github.com/waelzaid66-max/-BANCO-CA-OOM- | كود + CI + تقارير + GCP + Replit |
 | **AWS** | https://github.com/waelzaid66-max/aws-virgen | نشر EC2/Elastic Beanstalk (نسخة مطابقة للأساسي) |
 
-**مرجع الإنتاج الكامل:** `release/PRODUCTION-FULL-SNAPSHOT-2026-07-10.md`  
-**وسم الإصدار:** `v1.1.4-production-2026-07-10`
+**مرجع النشر الكامل:** `audit/production-readiness/FULL-DEPLOY-TASK-MATRIX-2026-07-11-AR.md`  
+**وسم الإصدار:** `v1.1.5-production-2026-07-11`
 
 ---
 
@@ -17,14 +17,16 @@
 
 | الريبو | الفرع | Tag | ملاحظة |
 |--------|--------|-----|--------|
-| **-BANCO-CA-OOM-** | `main` | `v1.1.4-production-2026-07-10` | waves 6–10C + TS fix |
+| **-BANCO-CA-OOM-** | `main` | `v1.1.5-production-2026-07-11` | confidence **19/19** · website CI **9/9** |
 | **aws-virgen** | `main` | نفس الوسم | بعد `publish-aws-virgen-rc.sh` أو workflow |
+| **B-OOM** (مرآة) | `main` | نفس SHA | `git push boom main` |
 
 ```bash
 git fetch origin main && git rev-parse --short origin/main
-node scripts/production-confidence-check.mjs    # 19/19
+pnpm run confidence                              # 19/19
+node scripts/website-ci-local.mjs                # 9/9
+pnpm run typecheck
 pnpm run ops:full-verify
-pnpm run ops:probe-full
 ```
 
 ---
@@ -33,12 +35,15 @@ pnpm run ops:probe-full
 
 | الطبقة | مثبت؟ | الدليل |
 |--------|--------|--------|
-| كود GitHub أساسي | ✅ | waves 6–10C · confidence **19/19** |
-| mobile typecheck | ✅ | `ListingMediaEditor` fix included |
-| lib-hardening | ✅ | **57/57** |
-| aws-virgen sync | ⏳ | يحتاج `AWS_VIRGEN_SYNC_TOKEN` + tag push |
+| كود GitHub أساسي | ✅ | browse journeys + seller bio API |
+| production-confidence | ✅ | **19/19** |
+| website CI local | ✅ | **9/9** |
+| monorepo typecheck | ✅ | api-server + mobile + libs |
+| API integration (محلي) | ⚠️ | `pnpm run test:api:local` (Docker Postgres) |
+| API integration (CI) | ✅ | GitHub Actions + Postgres service |
+| aws-virgen sync | ⏳ | `AWS_VIRGEN_SYNC_TOKEN` + tag push |
 | API حي — موجة 6 | ✅ | ISO + map bookable/price |
-| API حي — موجة 8 | ❌ **STALE** | `seller.social_links` — Replit redeploy |
+| API حي — موجة 8+10C+bio | ❌ **STALE** | Replit redeploy من `main` |
 | upload smoke | ⚠️ | health 2/2 · upload needs JWT |
 | EAS / متجر | ⏳ | بعد FRESH + Device QA |
 

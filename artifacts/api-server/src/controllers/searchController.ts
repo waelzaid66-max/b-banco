@@ -1,9 +1,12 @@
 import type { Request, Response } from "express";
 import { z } from "zod";
-import { parseSearchQuery, searchListings, getAutocomplete, getTrending, getRecommendations, getFacets, mapClusters } from "../services/SearchService";
+import { parseSearchQuery, searchListings, getAutocomplete, getTrending, getRecommendations, getFacets, mapClusters, type IndustrialSubtype } from "../services/SearchService";
 import { sanitizeParsedSearchQuery } from "../services/sanitizeParsedSearchQuery";
 import { SearchQuerySchema, FacetsQuerySchema, FacetCountsSchema, FeedItemSchema, successResponse, errorResponse, validateResponse, MapClustersQuerySchema, MapClusterSchema } from "../validators/schemas";
 import { ZodError } from "zod";
+import { industrialTypeEnum } from "@workspace/db/schema";
+
+const INDUSTRIAL_SUBTYPE_SET = new Set<string>(industrialTypeEnum.enumValues);
 
 // Build the engine's ParsedSearchQuery from a validated query: NLP-parse the free
 // text, then let explicit params override. Shared by searchHandler and
@@ -109,7 +112,7 @@ export async function autocompleteHandler(req: Request, res: Response) {
     const industrial_type = String(req.query.industrial_type ?? "")
       .split(",")
       .map((s) => s.trim())
-      .filter(Boolean);
+      .filter((s): s is IndustrialSubtype => INDUSTRIAL_SUBTYPE_SET.has(s));
     const suggestions = await getAutocomplete(q, {
       category,
       industrial_type: industrial_type.length ? industrial_type : undefined,

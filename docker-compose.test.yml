@@ -1,0 +1,21 @@
+# Local Postgres for api-server integration tests (mirrors CI job `test`).
+# Usage:
+#   docker compose -f docker-compose.test.yml up -d
+#   $env:DATABASE_URL="postgresql://postgres:postgres@127.0.0.1:5433/banco_test"
+#   pnpm --filter @workspace/db run push-force
+#   pnpm --filter @workspace/api-server run seed
+#   pnpm --filter @workspace/api-server run test
+services:
+  postgres:
+    image: postgres:16
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: banco_test
+    ports:
+      - "5433:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 5s
+      timeout: 5s
+      retries: 10

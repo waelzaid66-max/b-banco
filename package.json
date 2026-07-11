@@ -20,7 +20,9 @@
     "ops:wave-b": "node audit/mobile/scripts/wave-b-after-fresh.mjs",
     "ops:probe-full": "node audit/mobile/scripts/probe-full-deploy.mjs",
     "ops:full-verify": "node scripts/production-confidence-check.mjs --skip-typecheck && node artifacts/banco-mobile/tests/lib-hardening.test.mjs && pnpm --filter @workspace/search-contract run test",
-    "ops:website-ci": "node scripts/website-ci-local.mjs"
+    "ops:website-ci": "node scripts/website-ci-local.mjs",
+    "test:api:local": "node scripts/run-api-tests-local.mjs",
+    "test:api:unit": "pnpm --filter @workspace/api-server exec vitest run src/lib/sqlLikeEscape.test.ts src/services/sanitizeParsedSearchQuery.test.ts src/services/allowCommodityMaterialFilter.test.ts"
   },
   "private": true,
   "devDependencies": {

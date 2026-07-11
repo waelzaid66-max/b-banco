@@ -64,6 +64,9 @@ export async function syncRoleToClerk(clerkId: string, role: string): Promise<vo
 export interface UpdateUserProfileInput {
   account_type?: "individual" | "dealer" | "company";
   phone?: string | null;
+  bio?: string | null;
+  display_title?: string | null;
+  category_label?: string | null;
   business?: {
     activity_type: "car_dealer" | "real_estate_developer" | "factory" | "supplier";
     business_name: string;
@@ -163,14 +166,42 @@ export async function updateUserProfile(
     };
   }
 
-  // Empty patch (no-op) — return the current row without an empty UPDATE.
-  if (Object.keys(patch).length === 0) return user;
+  // Empty DB patch — still allow Clerk-only profile presentation updates.
+  const hasPresentationPatch =
+    input.bio !== undefined ||
+    input.display_title !== undefined ||
+    input.category_label !== undefined;
 
-  const [updated] = await db
-    .update(users)
-    .set(patch)
-    .where(eq(users.id, user.id))
-    .returning();
+  if (Object.keys(patch).length === 0 && !hasPresentationPatch) return user;
+
+  let updated = user;
+  if (Object.keys(patch).length > 0) {
+    const [row] = await db
+      .update(users)
+      .set(patch)
+      .where(eq(users.id, user.id))
+      .returning();
+    updated = row;
+  }
+
+  if (hasPresentationPatch) {
+    try {
+      const presentation: Record<string, string | null> = {};
+      if (input.bio !== undefined) presentation.bio = input.bio;
+      if (input.display_title !== undefined) {
+        presentation.displayTitle = input.display_title;
+      }
+      if (input.category_label !== undefined) {
+        presentation.categoryLabel = input.category_label;
+      }
+      await clerkClient.users.updateUserMetadata(clerkId, {
+        publicMetadata: presentation,
+        unsafeMetadata: presentation,
+      });
+    } catch (err) {
+      console.error("[Profile sync] Failed to mirror presentation to Clerk", err);
+    }
+  }
 
   // Best-effort mirror of the resolved role (+ business profile) into Clerk
   // publicMetadata so client surfaces that read it stay consistent.
